@@ -4,22 +4,112 @@
 
 ```
 ブラウザ
-├── Next.js（App Router）
-│   ├── Server Components（データ取得・認証チェック）
-│   └── Client Components（インタラクション・エディタ）
-├── DuckDB WASM（ブラウザ内SQL実行・サーバー不要）
-├── Monaco Editor（SQLエディタ）
-└── Reactflow（パイプライン可視化）
-        ↓ API Route
-Supabase（認証・進捗保存）
-Claude API（AIフィードバック生成）
+├── Next.js App Router
+│   ├── Server Components（データ取得・認証）
+│   └── Client Components（インタラクション）
+├── ReactFlow（パイプライン設計画面 ← 主役）
+├── DuckDB WASM（ブラウザ内データ処理）
+├── Monaco Editor（SQL補助入力・補助的役割）
+└── Zustand（状態管理）
+        ↓
+Supabase（認証・進捗・設計保存）
+Claude API（設計レビュー・AIフィードバック）
 ```
 
 ---
 
-## DuckDB WASM 実装
+## 核心コンポーネント：PipelineDesigner
 
-### 初期化（lib/duckdb/engine.ts）
+このアプリの主役コンポーネント。ReactFlowを使ってノードを視覚的に繋ぐ設計画面。
+
+```typescript
+// components/pipeline/PipelineDesigner.tsx
+'use client';
+
+import ReactFlow, {
+  Node, Edge, Connection,
+  addEdge, useNodesState, useEdgesState,
+  Controls, Background
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+
+const LAYER_NODES: Node[] = [
+  {
+    id: 'source',
+    type: 'layerNode',
+    position: { x: 100, y: 100 },
+    data: {
+      label: 'Source Layer',
+      description: '生データをそのまま保持',
+      status: 'available',
+      tables: ['src_orders', 'src_users', 'src_products'],
+    }
+  },
+  {
+    id: 'staging',
+    type: 'layerNode',
+    position: { x: 100, y: 250 },
+    data: {
+      label: 'Staging Layer',
+      description: 'データを整形・クレンジング',
+      status: 'locked',
+      tables: [],
+    }
+  },
+  {
+    id: 'warehouse',
+    type: 'layerNode',
+    position: { x: 100, y: 400 },
+    data: {
+      label: 'Warehouse Layer',
+      description: 'fact/dimに構造化',
+      status: 'locked',
+      tables: [],
+    }
+  },
+  {
+    id: 'mart',
+    type: 'layerNode',
+    position: { x: 100, y: 550 },
+    data: {
+      label: 'Mart Layer',
+      description: '分析用・意思決定を支援',
+      status: 'locked',
+      tables: [],
+    }
+  },
+];
+
+export function PipelineDesigner({ questId, onStageSelect }) {
+  const [nodes, setNodes, onNodesChange] = useNodesState(LAYER_NODES);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const onConnect = (connection: Connection) => {
+    setEdges(eds => addEdge(connection, eds));
+  };
+
+  return (
+    <div style={{ width: '100%', height: '600px' }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        nodeTypes={{ layerNode: LayerNode }}
+        fitView
+      >
+        <Controls />
+        <Background />
+      </ReactFlow>
+    </div>
+  );
+}
+```
+
+---
+
+## DuckDB WASM（lib/duckdb/engine.ts）
 
 ```typescript
 import * as duckdb from '@duckdb/duckdb-wasm';
@@ -28,25 +118,20 @@ let db: duckdb.AsyncDuckDB | null = null;
 
 export async function getDB(): Promise<duckdb.AsyncDuckDB> {
   if (db) return db;
-  
   const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
   const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
   const worker = await duckdb.createWorker(bundle.mainWorker!);
-  const logger = new duckdb.ConsoleLogger();
-  
-  db = new duckdb.AsyncDuckDB(logger, worker);
+  db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
   await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-  
   return db;
 }
 
-export async function executeSQL(sql: string): Promise<QueryResult> {
+export async function executeTransform(sql: string): Promise<TransformResult> {
   try {
     const database = await getDB();
     const conn = await database.connect();
     const result = await conn.query(sql);
     await conn.close();
-    
     return {
       columns: result.schema.fields.map(f => f.name),
       rows: result.toArray().map(r => r.toJSON()),
@@ -54,16 +139,18 @@ export async function executeSQL(sql: string): Promise<QueryResult> {
       error: null,
     };
   } catch (e) {
-    return {
-      columns: [],
-      rows: [],
-      rowCount: 0,
-      error: String(e),
-    };
+    return { columns: [], rows: [], rowCount: 0, error: String(e) };
   }
 }
 
-export type QueryResult = {
+export async function loadScenarioData(questId: string, csvFiles: CsvFile[]) {
+  const database = await getDB();
+  for (const { name, content } of csvFiles) {
+    await database.registerFileText(`${name}.csv`, content);
+  }
+}
+
+export type TransformResult = {
   columns: string[];
   rows: Record<string, unknown>[];
   rowCount: number;
@@ -71,36 +158,16 @@ export type QueryResult = {
 };
 ```
 
-### CSVデータのロード
-
-```typescript
-export async function loadScenarioData(questId: string): Promise<void> {
-  const database = await getDB();
-  const conn = await database.connect();
-  
-  // CSVファイルをDuckDBに登録
-  const csvFiles = await getScenarioCsvFiles(questId);
-  
-  for (const { name, content } of csvFiles) {
-    await database.registerFileText(`${name}.csv`, content);
-  }
-  
-  await conn.close();
-}
-```
-
 ---
 
-## シナリオ定義（lib/scenarios/）
-
-### 型定義（types/index.ts）
+## 型定義（types/index.ts）
 
 ```typescript
 export type QuestId = 'ec-site' | 'saas' | 'medical' | 'finance';
 export type StageId = 'opening' | 'source' | 'staging' | 'warehouse' | 'mart';
-export type GameType = 'rpg' | 'stage_clear' | 'simulation' | 'boss';
 export type StageStatus = 'locked' | 'in_progress' | 'completed';
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
+export type GameType = 'rpg' | 'stage_clear' | 'simulation' | 'boss' | 'decision';
 
 export interface Quest {
   id: QuestId;
@@ -112,6 +179,7 @@ export interface Quest {
   estimatedMinutes: number;
   requiredLevel: number;
   tags: string[];
+  deConceptsCovered: string[];   // 学べるDE概念
   stages: Stage[];
   csvFiles: CsvFile[];
 }
@@ -120,20 +188,23 @@ export interface Stage {
   id: StageId;
   title: string;
   gameType: GameType;
+  conceptTaught: string;         // このステージで学ぶ概念
   missionText: string;
   hintText: string;
-  initialSQL: string;
+  storyMessage?: string;         // 上司・クライアントからのメッセージ
+  initialTransform?: string;     // 初期SQL（補助的）
   validation: ValidationRule[];
   xpReward: { star1: number; star2: number; star3: number };
   badgeId?: string;
 }
 
-export interface ValidationRule {
-  type: 'table_exists' | 'row_count' | 'column_exists' | 'column_type' | 'custom';
-  table?: string;
-  column?: string;
-  expected?: unknown;
-  sql?: string; // type: 'custom' のとき使用
+export interface PipelineNode {
+  id: string;
+  layer: StageId;
+  label: string;
+  description: string;
+  status: 'locked' | 'available' | 'in_progress' | 'completed';
+  tables: string[];
 }
 
 export interface CsvFile {
@@ -146,39 +217,19 @@ export interface UserProgress {
   stageId: StageId;
   status: StageStatus;
   stars: number;
-  sqlAnswer?: string;
+  pipelineDesign?: PipelineNode[];
   xpEarned: number;
   completedAt?: string;
 }
-```
 
-### ECサイトシナリオ（lib/scenarios/ec-site/index.ts）
-
-```typescript
-import type { Quest } from '@/types';
-import { ordersCSV, usersCSV, productsCSV } from './data';
-import { stages } from './stages';
-
-export const ecSiteQuest: Quest = {
-  id: 'ec-site',
-  title: '売上が見えない',
-  clientName: 'ShopNow',
-  difficulty: 'beginner',
-  description: 'ECクライアントの売上データが散在。Source→Martまで基盤を構築。',
-  storyText: `ShopNowのCTOからメッセージが届いた。
-「売上データが各システムにバラバラに存在していて、
-先月の売上すら正確に出せない状態です。
-経営会議まであと2週間。助けてください。」`,
-  estimatedMinutes: 90,
-  requiredLevel: 1,
-  tags: ['EC', 'orders', 'staging', 'star-schema'],
-  stages,
-  csvFiles: [
-    { name: 'orders', content: ordersCSV },
-    { name: 'users', content: usersCSV },
-    { name: 'products', content: productsCSV },
-  ],
-};
+export interface ValidationRule {
+  type: 'table_exists' | 'row_count' | 'column_exists' | 'column_type' | 'no_nulls' | 'custom';
+  table?: string;
+  column?: string;
+  expected?: unknown;
+  sql?: string;
+  message: string;              // バリデーション失敗時のメッセージ
+}
 ```
 
 ---
@@ -193,123 +244,83 @@ const client = new Anthropic();
 export interface FeedbackRequest {
   questId: string;
   stageId: string;
-  sql: string;
-  queryResult: unknown;
-  validationResult: ValidationResult;
+  conceptTaught: string;
+  pipelineDesign: unknown;
+  transformResult: unknown;
+  validationResult: unknown;
 }
 
 export interface FeedbackResponse {
   stars: 1 | 2 | 3;
+  conceptExplanation: string;   // この設計が「なぜ」良いか/悪いか
   message: string;
   improvements: string[];
   encouragement: string;
 }
 
-export async function generateFeedback(
-  req: FeedbackRequest
-): Promise<FeedbackResponse> {
-  const prompt = buildFeedbackPrompt(req);
-  
+export async function generateFeedback(req: FeedbackRequest): Promise<FeedbackResponse> {
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
-    messages: [{ role: 'user', content: prompt }],
+    messages: [{
+      role: 'user',
+      content: buildPrompt(req),
+    }],
   });
-  
+
   const text = message.content[0].type === 'text' ? message.content[0].text : '';
-  
   return JSON.parse(text) as FeedbackResponse;
 }
 
-function buildFeedbackPrompt(req: FeedbackRequest): string {
+function buildPrompt(req: FeedbackRequest): string {
   return `あなたはデータエンジニアリングのメンター「田中シニアエンジニア」です。
-新人エンジニアのSQLを以下の観点でレビューしてください。
 
-ステージ: ${req.stageId}
-提出SQL:
-${req.sql}
+このステージで学ぶべき概念: ${req.conceptTaught}
+
+ユーザーの設計:
+${JSON.stringify(req.pipelineDesign, null, 2)}
 
 実行結果:
-${JSON.stringify(req.queryResult, null, 2)}
+${JSON.stringify(req.transformResult, null, 2)}
 
-バリデーション結果:
+バリデーション:
 ${JSON.stringify(req.validationResult, null, 2)}
 
-以下のJSON形式のみで返してください（他のテキスト不要）:
+以下のJSON形式のみで返してください:
 {
-  "stars": 1〜3の整数,
-  "message": "全体的なフィードバック（2〜3文）",
+  "stars": 1〜3,
+  "conceptExplanation": "この設計のなぜ（DE概念の観点から2〜3文）",
+  "message": "全体フィードバック",
   "improvements": ["改善点1", "改善点2"],
   "encouragement": "励ましの一言"
 }
 
-評価基準:
-★1: 動く（最低限の要件を満たす）
-★2: 良い設計（命名・型・構造が適切）
-★3: ベストプラクティス（監査カラム・パフォーマンス考慮あり）
-
-口調: 丁寧だが親しみやすい。技術用語は使うが、初学者にわかる言葉で補足する。`;
+重要: コードの正誤ではなく、データエンジニアリングの設計思想を評価してください。
+★評価基準:
+★1: 動く
+★2: 設計の意図が正しい
+★3: ベストプラクティス（監査・品質・パフォーマンスまで考慮）`;
 }
 ```
 
 ---
 
-## Supabase設定（lib/supabase/）
-
-### クライアント（lib/supabase/client.ts）
+## Supabase 認証・初期化
 
 ```typescript
-import { createBrowserClient } from '@supabase/ssr';
-
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
-```
-
-### サーバー（lib/supabase/server.ts）
-
-```typescript
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-
-export function createClient() {
-  const cookieStore = cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-}
-```
-
-### サインアップ時の初期化
-
-```typescript
+// app/(auth)/signup/actions.ts
 export async function signUpAndInitialize(email: string, password: string) {
   const supabase = createClient();
-  
   const { data: authData, error } = await supabase.auth.signUp({ email, password });
   if (error || !authData.user) throw error;
-  
-  // organizationを作成
+
+  // 1. Organization作成（B2B拡張を見据えた設計）
   const { data: org } = await supabase
     .from('organizations')
     .insert({ name: `${email}'s workspace`, type: 'personal' })
     .select().single();
-  
-  // usersに登録
+
+  // 2. User登録
   await supabase.from('users').insert({
     id: authData.user.id,
     organization_id: org.id,
@@ -317,43 +328,38 @@ export async function signUpAndInitialize(email: string, password: string) {
     level: 1,
     total_xp: 0,
   });
-  
-  // 最初のクエスト進捗を初期化
-  await supabase.from('user_progress').insert([
-    { user_id: authData.user.id, quest_id: 'ec-site', stage: 'opening', status: 'in_progress' },
-    { user_id: authData.user.id, quest_id: 'ec-site', stage: 'source', status: 'locked' },
-    { user_id: authData.user.id, quest_id: 'ec-site', stage: 'staging', status: 'locked' },
-    { user_id: authData.user.id, quest_id: 'ec-site', stage: 'warehouse', status: 'locked' },
-    { user_id: authData.user.id, quest_id: 'ec-site', stage: 'mart', status: 'locked' },
-  ]);
+
+  // 3. 初期進捗（ECサイト初級を解放済みに）
+  const stages: StageId[] = ['opening', 'source', 'staging', 'warehouse', 'mart'];
+  await supabase.from('user_progress').insert(
+    stages.map((stage, i) => ({
+      user_id: authData.user!.id,
+      quest_id: 'ec-site',
+      stage,
+      status: i === 0 ? 'in_progress' : 'locked',
+    }))
+  );
 }
 ```
 
 ---
 
-## 環境変数
-
-```bash
-# .env.local
-NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxx...
-ANTHROPIC_API_KEY=sk-ant-xxx...
-```
-
----
-
-## パフォーマンス考慮事項
-
-- DuckDB WASMは初回ロードに2〜3秒かかる → ローディング画面を表示する
-- Monaco Editorも重い → dynamic importで遅延ロードする
-- AIフィードバックは3〜5秒かかる → ストリーミング対応を検討
+## パフォーマンス考慮
 
 ```typescript
-// Monaco Editorの遅延ロード
+// DuckDB WASMは初回ロード2〜3秒 → ローディング画面を表示
+// Monaco Editorは重い → dynamic importで遅延ロード
+// ReactFlowは初期化が必要 → Suspenseでラップ
+
 import dynamic from 'next/dynamic';
 
-const SqlEditor = dynamic(
-  () => import('@/components/editor/SqlEditor'),
-  { ssr: false, loading: () => <div>エディタを読み込み中...</div> }
+const PipelineDesigner = dynamic(
+  () => import('@/components/pipeline/PipelineDesigner'),
+  { ssr: false, loading: () => <PipelineLoading /> }
+);
+
+const TransformEditor = dynamic(
+  () => import('@/components/stage/TransformEditor'),
+  { ssr: false, loading: () => <EditorLoading /> }
 );
 ```
