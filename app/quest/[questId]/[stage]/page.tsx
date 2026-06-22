@@ -8,13 +8,11 @@ import { registerCsvFile, runSQL, querySQL } from '@/lib/duckdb/engine';
 import { runValidation } from '@/lib/duckdb/validate';
 import { TransformEditor } from '@/components/stage/TransformEditor';
 import { DataPreview } from '@/components/stage/DataPreview';
-import { AiFeedback } from '@/components/feedback/AiFeedback';
 import { StageCompleteOverlay } from '@/components/stage/StageCompleteOverlay';
-import { saveStageProgress, checkAiFeedbackLimit, recordAiFeedbackUsage } from '@/lib/supabase/progress';
+import { saveStageProgress } from '@/lib/supabase/progress';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import type { QuestId, StageId, QueryResult } from '@/types';
 import type { ValidationResult } from '@/lib/duckdb/validate';
-import type { FeedbackResponse } from '@/lib/ai/feedback';
 
 function isSelectStatement(sql: string): boolean {
   const firstCode = sql.split('\n').find(l => l.trim() && !l.trim().startsWith('--'));
@@ -60,18 +58,14 @@ export default function StagePage() {
   const [execLog, setExecLog] = useState<string[]>([]);
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
   const [previewResult, setPreviewResult] = useState<QueryResult | null>(null);
-  const [feedback, setFeedback] = useState<FeedbackResponse | null>(null);
-  const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [dbReady, setDbReady] = useState(false);
   const [completion, setCompletion] = useState<CompletionData | null>(null);
-  const [aiFeedbackBlocked, setAiFeedbackBlocked] = useState(false);
 
   useEffect(() => {
     setSql(stage?.initialTransform ?? '');
     setExecLog([]);
     setValidationResults([]);
     setPreviewResult(null);
-    setFeedback(null);
     setCompletion(null);
   }, [stageId, stage?.initialTransform]);
 
@@ -84,60 +78,6 @@ export default function StagePage() {
   }, [quest?.id]);
 
   const allPassed = validationResults.length > 0 && validationResults.every(r => r.passed);
-
-  const fetchFeedback = async (userSql: string, passed: boolean) => {
-    if (!stage || !quest) return;
-
-    // Check free plan AI limit
-    if (isSupabaseConfigured()) {
-      const allowed = await checkAiFeedbackLimit();
-      if (!allowed) {
-        setAiFeedbackBlocked(true);
-        if (passed) {
-          await handleCompletion(userSql, 1);
-        }
-        return;
-      }
-    }
-
-    setFeedbackLoading(true);
-    try {
-      const res = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          questId: quest.id,
-          stageId: stage.id,
-          conceptTaught: stage.conceptTaught,
-          userSQL: userSql,
-          validationPassed: passed,
-        }),
-      });
-      const data = (await res.json()) as FeedbackResponse;
-      setFeedback(data);
-
-      if (isSupabaseConfigured()) {
-        await recordAiFeedbackUsage(quest.id, stage.id);
-      }
-
-      if (passed) {
-        await handleCompletion(userSql, data.stars);
-      }
-    } catch {
-      setFeedback({
-        stars: 2,
-        conceptExplanation: 'AIレビューを取得できませんでした。',
-        message: '設計の方向性は正しいです。次のステージへ進んでください。',
-        improvements: [],
-        encouragement: '次へ進みましょう！',
-      });
-      if (passed) {
-        await handleCompletion(userSql, 2);
-      }
-    } finally {
-      setFeedbackLoading(false);
-    }
-  };
 
   const handleCompletion = async (userSql: string, stars: number) => {
     if (!stage || !quest) return;
@@ -163,9 +103,7 @@ export default function StagePage() {
     setIsRunning(true);
     setValidationResults([]);
     setPreviewResult(null);
-    setFeedback(null);
     setCompletion(null);
-    setAiFeedbackBlocked(false);
 
     const statements = splitStatements(sql);
     const log: string[] = [`▶ ${statements.length} 文を実行します`];
@@ -221,12 +159,11 @@ export default function StagePage() {
         } else if (lastSelectResult) {
           setPreviewResult(lastSelectResult);
         }
-        await fetchFeedback(sql, true);
+        await handleCompletion(sql, 2);
       } else {
         const failCount = results.filter(r => !r.passed).length;
         log.push(`  ✗ ${failCount} 件のチェックに失敗`);
         if (lastSelectResult) setPreviewResult(lastSelectResult);
-        await fetchFeedback(sql, false);
       }
     }
 
@@ -253,7 +190,6 @@ export default function StagePage() {
 
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-white overflow-hidden">
-      {/* Stage complete overlay */}
       {completion && (
         <StageCompleteOverlay
           stars={completion.stars}
@@ -445,25 +381,15 @@ export default function StagePage() {
           </div>
         </main>
 
-        {/* Right: Preview + AI Feedback */}
+        {/* Right: Data preview + hint */}
         <aside className="w-80 border-l border-slate-800 flex flex-col flex-shrink-0 overflow-y-auto">
           <div className="p-4 space-y-4">
-            {/* Hint (shown until all validations pass) */}
+            {/* Hint */}
             {!allPassed && stage.hintText && (
               <div className="px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
                 <p className="text-xs text-amber-500 mb-1 font-medium">ヒント</p>
                 <p className="text-amber-300/90 text-xs font-mono leading-relaxed whitespace-pre-wrap">
                   {stage.hintText}
-                </p>
-              </div>
-            )}
-
-            {/* AI limit notice */}
-            {aiFeedbackBlocked && (
-              <div className="px-3 py-2.5 rounded-lg bg-slate-800 border border-slate-700">
-                <p className="text-slate-400 text-xs font-medium mb-1">AIレビュー上限到達</p>
-                <p className="text-slate-500 text-xs">
-                  Freeプランは1日3回まで。Proプランで無制限に。
                 </p>
               </div>
             )}
@@ -475,16 +401,6 @@ export default function StagePage() {
               </p>
               <DataPreview result={previewResult} />
             </div>
-
-            {/* AI Feedback */}
-            {(feedbackLoading || feedback) && (
-              <div>
-                <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 font-medium">
-                  AIレビュー
-                </p>
-                <AiFeedback feedback={feedback} isLoading={feedbackLoading} />
-              </div>
-            )}
           </div>
         </aside>
       </div>
