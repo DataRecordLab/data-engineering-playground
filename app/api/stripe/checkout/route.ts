@@ -3,7 +3,10 @@ import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST() {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 });
+  }
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
