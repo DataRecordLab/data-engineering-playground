@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { WorldMapClient } from '@/components/map/WorldMapClient';
 
@@ -38,9 +39,21 @@ export default async function DashboardPage() {
 
         {/* Player status */}
         <div className="flex items-center gap-4">
-          {displayName && (
-            <span className="text-slate-500 text-xs">{displayName}</span>
-          )}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              {displayName && (
+                <span className="text-slate-500 text-xs">{displayName}</span>
+              )}
+              <Link
+                href="/onboarding"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-700 bg-slate-800/60 hover:border-slate-600 hover:bg-slate-800 text-slate-400 hover:text-slate-300 text-xs transition-colors"
+                title="キャラクターを編集"
+              >
+                <span>✏️</span>
+                <span>キャラ編集</span>
+              </Link>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <div className="text-right">
               <p className="text-xs text-slate-500">XP</p>
