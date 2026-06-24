@@ -9,6 +9,7 @@ import { runValidation } from '@/lib/duckdb/validate';
 import { TransformEditor } from '@/components/stage/TransformEditor';
 import { DataPreview } from '@/components/stage/DataPreview';
 import { StageCompleteOverlay } from '@/components/stage/StageCompleteOverlay';
+import { QuestPipelineDesigner } from '@/components/pipeline/QuestPipelineDesigner';
 import { saveStageProgress } from '@/lib/supabase/progress';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import type { QuestId, StageId, QueryResult } from '@/types';
@@ -188,6 +189,90 @@ export default function StagePage() {
     );
   }
 
+  // ── Pipeline design stage ──────────────────────────────────────────────────
+  if (stage.type === 'pipeline' && stage.pipelineConfig) {
+    const { layers, requiredConnections } = stage.pipelineConfig;
+    return (
+      <div className="flex flex-col h-screen bg-slate-950 text-white overflow-hidden">
+        {completion && (
+          <StageCompleteOverlay
+            stars={completion.stars}
+            xpEarned={completion.xpEarned}
+            badgeId={completion.badgeId}
+            nextLabel={`次へ: ${nextStage?.title} →`}
+            onNext={handleNext}
+          />
+        )}
+        <header className="flex items-center gap-3 px-5 py-3 border-b border-slate-800 flex-shrink-0">
+          <Link href={`/quest/${questId}`} className="text-slate-500 hover:text-white text-sm transition-colors">
+            ← {quest.clientName}
+          </Link>
+          <span className="text-slate-700">/</span>
+          <span className="text-slate-300 text-sm font-medium">{stage.title}</span>
+        </header>
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
+          <aside className="w-48 border-r border-slate-800 bg-slate-900/60 flex-shrink-0 overflow-y-auto">
+            <div className="p-3">
+              <p className="text-xs text-slate-600 uppercase tracking-wider mb-3 font-medium px-1">パイプライン</p>
+              <nav className="space-y-1">
+                {quest.stages.map((s, i) => {
+                  const isCurrent = s.id === stageId;
+                  const isPast = i < stageIndex;
+                  return (
+                    <Link
+                      key={s.id}
+                      href={`/quest/${questId}/${s.id}`}
+                      className={`flex items-start gap-2 px-3 py-2 rounded-lg text-xs transition-colors ${
+                        isCurrent ? 'bg-blue-600/20 text-blue-300 border border-blue-600/30'
+                        : isPast ? 'text-slate-400 hover:bg-slate-800'
+                        : 'text-slate-600 hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className="mt-0.5 flex-shrink-0 font-mono text-xs">{isPast ? '✓' : isCurrent ? '▷' : `${i + 1}`}</span>
+                      <span className="leading-snug">{s.title}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          </aside>
+          {/* Center: mission */}
+          <div className="w-72 border-r border-slate-800 overflow-y-auto flex-shrink-0">
+            <div className="p-5 space-y-4">
+              <div className="px-4 py-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <p className="text-xs text-blue-400 uppercase tracking-wider mb-1 font-medium">今日学ぶ概念</p>
+                <p className="text-white text-sm font-medium leading-relaxed">{stage.conceptTaught}</p>
+              </div>
+              {stage.storyMessage && (
+                <div className="px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700">
+                  <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{stage.storyMessage}</p>
+                </div>
+              )}
+              <div className="px-4 py-3 rounded-xl border border-slate-700">
+                <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 font-medium">ミッション</p>
+                <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{stage.missionText}</p>
+              </div>
+              <div className="px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <p className="text-xs text-amber-500 mb-1 font-medium">ヒント</p>
+                <p className="text-amber-300/90 text-xs leading-relaxed">{stage.hintText}</p>
+              </div>
+            </div>
+          </div>
+          {/* Right: pipeline canvas */}
+          <div className="flex-1 overflow-hidden">
+            <QuestPipelineDesigner
+              layers={layers}
+              requiredConnections={requiredConnections}
+              onComplete={() => handleCompletion('', 2)}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Transform (SQL) stage ───────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-white overflow-hidden">
       {completion && (

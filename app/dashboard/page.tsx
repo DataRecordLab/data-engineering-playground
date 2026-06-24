@@ -11,17 +11,19 @@ export default async function DashboardPage() {
   let level = 1;
   let totalXp = 0;
   let displayName = '';
+  let plan: 'free' | 'pro' = 'free';
 
   if (user) {
     const { data: profile } = await supabase
       .from('users')
-      .select('level, total_xp, display_name')
+      .select('level, total_xp, display_name, plan')
       .eq('id', user.id)
       .single();
 
     level = profile?.level ?? 1;
     totalXp = profile?.total_xp ?? 0;
     displayName = profile?.display_name ?? '';
+    plan = (profile?.plan as 'free' | 'pro') ?? 'free';
   }
 
   const xpInLevel = totalXp % XP_PER_LEVEL;
@@ -38,7 +40,20 @@ export default async function DashboardPage() {
         </div>
 
         {/* Player status */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Plan badge */}
+          {plan === 'pro' ? (
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/20 border border-purple-500/40 text-purple-300">
+              PRO
+            </span>
+          ) : (
+            <Link
+              href="/upgrade"
+              className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-800 border border-slate-700 text-slate-500 hover:border-purple-500/40 hover:text-purple-400 transition-colors"
+            >
+              FREE → Pro
+            </Link>
+          )}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               {displayName && (

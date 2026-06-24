@@ -35,10 +35,21 @@ export interface TableOutputNodeData {
 // Phase 1+ — Quest / Stage Types
 
 export type QuestId = 'ec-site' | 'saas' | 'medical' | 'finance';
-export type StageId = 'opening' | 'source' | 'staging' | 'warehouse' | 'mart';
+export type StageId = 'opening' | 'pipeline' | 'source' | 'staging' | 'warehouse' | 'mart';
+export type StageType = 'pipeline' | 'transform';
 export type StageStatus = 'locked' | 'in_progress' | 'completed';
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 export type GameType = 'rpg' | 'stage_clear' | 'simulation' | 'boss' | 'decision';
+
+export interface PipelineLayerConfig {
+  id: string;
+  label: string;
+  description: string;
+  color: string;
+  tables: string[];
+  x: number;
+  y: number;
+}
 
 export interface Quest {
   id: QuestId;
@@ -57,6 +68,7 @@ export interface Quest {
 
 export interface Stage {
   id: StageId;
+  type?: StageType;
   title: string;
   gameType: GameType;
   conceptTaught: string;
@@ -67,6 +79,10 @@ export interface Stage {
   validation: ValidationRule[];
   xpReward: { star1: number; star2: number; star3: number };
   badgeId?: string;
+  pipelineConfig?: {
+    layers: PipelineLayerConfig[];
+    requiredConnections: Array<{ from: string; to: string }>;
+  };
 }
 
 export interface PipelineNode {

@@ -74,6 +74,73 @@ CSVを3つ受け取った: orders / users / products`,
   ],
   stages: [
     {
+      id: 'pipeline',
+      type: 'pipeline',
+      title: 'パイプライン設計',
+      gameType: 'rpg',
+      conceptTaught: 'データパイプラインの全体像：Source → Staging → Warehouse → Mart の4層構造',
+      missionText: `ShopNowのデータ基盤を設計してください。
+
+4つのレイヤーを正しい順番で繋いで、
+データパイプラインの全体像を作りましょう。
+
+各レイヤーを右側のハンドル（●）からドラッグして
+次のレイヤーに接続してください。`,
+      hintText: '左から右へ: Source → Staging → Warehouse → Mart の順番で繋ぐ',
+      storyMessage: `田中シニアエンジニア:
+「まず全体の設計図を描くことが大事だ。
+いきなりコードを書き始めるのはエンジニアの悪い癖。
+4層のパイプラインがどう繋がるか、頭の中を可視化しろ。」`,
+      validation: [],
+      xpReward: { star1: 50, star2: 50, star3: 50 },
+      badgeId: 'pipeline_architect',
+      pipelineConfig: {
+        layers: [
+          {
+            id: 'source',
+            label: 'Source Layer',
+            description: '生データをそのまま保持。加工しない。',
+            color: '#6366f1',
+            tables: ['src_orders', 'src_users', 'src_products'],
+            x: 40,
+            y: 140,
+          },
+          {
+            id: 'staging',
+            label: 'Staging Layer',
+            description: 'クレンジング・型変換・表記揺れ修正',
+            color: '#f59e0b',
+            tables: ['stg_orders', 'stg_users', 'stg_products'],
+            x: 280,
+            y: 140,
+          },
+          {
+            id: 'warehouse',
+            label: 'Warehouse Layer',
+            description: 'スタースキーマ設計。fact / dim に分離。',
+            color: '#10b981',
+            tables: ['fact_orders', 'dim_users', 'dim_products'],
+            x: 520,
+            y: 140,
+          },
+          {
+            id: 'mart',
+            label: 'Mart Layer',
+            description: 'ビジネス用途に特化したKPI集計テーブル',
+            color: '#f43f5e',
+            tables: ['mart_sales_by_dow'],
+            x: 760,
+            y: 140,
+          },
+        ],
+        requiredConnections: [
+          { from: 'source', to: 'staging' },
+          { from: 'staging', to: 'warehouse' },
+          { from: 'warehouse', to: 'mart' },
+        ],
+      },
+    },
+    {
       id: 'source',
       title: 'Source Layer',
       gameType: 'stage_clear',
