@@ -2,6 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { runSQL, querySQL } from '@/lib/duckdb/engine';
+import { ReflectionQuestion } from './ReflectionQuestion';
+
+const WAREHOUSE_REFLECTION = {
+  question: 'fact_orders は user_name を直接持たず、user_key（外部キー）で dim_users に紐付けました。なぜこの設計にしたのですか？',
+  options: [
+    {
+      label: 'ユーザー名が変更されたとき、dim_users だけ更新すれば fact_orders 全レコードに自動で反映されるから',
+      correct: true,
+      explanation: '✓ 正解！これがスタースキーマの核心メリットです。もし fact_orders に user_name を直接持っていたら、名前変更のたびに何千・何万行を UPDATE する必要があります。外部キーで参照することで、dim_users の 1 行だけ更新すれば済みます。',
+    },
+    {
+      label: 'fact テーブルに文字列カラムを入れると SQL がエラーになるから',
+      correct: false,
+      explanation: '技術的な制約ではありません。fact テーブルに文字列を入れることは可能です。スタースキーマで外部キーを使う理由は「データの一元管理と更新の効率化」という設計上の選択です。',
+    },
+    {
+      label: 'データ量を減らしてクエリを速くするため',
+      correct: false,
+      explanation: '部分的には正しいですが、それだけではありません。正規化の主な目的は「データの一貫性（整合性）を保つこと」です。名前が変わっても 1 箇所だけ更新すれば全体に反映されます。',
+    },
+  ],
+};
 
 // ─── Prerequisites ────────────────────────────────────────────────────────────
 
@@ -54,6 +76,7 @@ export function WarehouseStage({ dbReady, onComplete }: Props) {
   const [answers, setAnswers] = useState<Record<string, 'fact' | 'dim' | null>>({});
   const [selected, setSelected] = useState<'fact' | 'dim' | null>(null);
   const [wrongMsg, setWrongMsg] = useState<string | null>(null);
+  const [showReflection, setShowReflection] = useState(false);
   const [building, setBuilding] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -130,13 +153,30 @@ export function WarehouseStage({ dbReady, onComplete }: Props) {
             fact_orders は「出来事（注文）」の数値と外部キーのみを持ち、dim テーブルが属性情報（名前・カテゴリ）を提供します。このスタースキーマにより高速な分析クエリが実現できます。
           </div>
 
-          <button
-            onClick={handleBuild}
-            disabled={building || done}
-            className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-          >
-            {done ? '✓ Warehouse Layer 完成！' : building ? <><span className="animate-spin inline-block">⟳</span>スキーマ構築中...</> : '▶ このスキーマで構築する'}
-          </button>
+          {/* Reflection before building */}
+          {!showReflection && !done && (
+            <button
+              onClick={() => setShowReflection(true)}
+              className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm transition-colors"
+            >
+              ▶ このスキーマで構築する
+            </button>
+          )}
+
+          {showReflection && !done && (
+            <ReflectionQuestion
+              question={WAREHOUSE_REFLECTION.question}
+              options={WAREHOUSE_REFLECTION.options}
+              onComplete={handleBuild}
+              completeLabel="理解しました！Warehouse Layer を構築する →"
+            />
+          )}
+
+          {done && (
+            <div className="w-full py-3.5 rounded-xl bg-emerald-600/50 text-white font-semibold text-sm text-center">
+              ✓ Warehouse Layer 完成！
+            </div>
+          )}
         </div>
       </div>
     );

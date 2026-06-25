@@ -18,6 +18,28 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import type { PipelineLayerConfig } from '@/types';
+import { ReflectionQuestion } from '@/components/stage/ReflectionQuestion';
+
+const PIPELINE_FINAL_REFLECTION = {
+  question: 'このパイプラインでは Source に生データを置いて、変換は Staging 以降で行う「ELT」方式を採用しました。なぜ「先に変換してから格納する ETL」ではなく ELT を選んだのですか？',
+  options: [
+    {
+      label: 'クラウド DWH の処理能力が上がり、ロード後に DWH 内で変換するほうが速く・柔軟になったから',
+      correct: true,
+      explanation: '✓ 正解！ETL は処理能力が低かった時代の手法です。現代のクラウド DWH（BigQuery・Snowflake・DuckDB 等）は大量データを高速に処理できるため、まず生データをロード（EL）し、DWH 内で変換（T）するほうが再利用性・柔軟性が高くなります。',
+    },
+    {
+      label: 'ETL はエラーが多くて使い物にならないから',
+      correct: false,
+      explanation: 'ETL が「ダメ」なわけではありません。ETL は今も多くの場所で使われています。ELT が主流になった理由は「クラウド DWH の処理能力向上」と「変換ロジックを DWH 内で管理できる柔軟性」です。',
+    },
+    {
+      label: 'ELT の方が設定ファイルが少なくて済むから',
+      correct: false,
+      explanation: '設定量は主な理由ではありません。ELT が選ばれる理由は「生データをまず保持して原本を守る」こと、そして「変換を後からやり直せる再現性」を確保できるからです。',
+    },
+  ],
+};
 
 // ─── Static Data ──────────────────────────────────────────────────────────────
 
@@ -302,6 +324,7 @@ function CanvasPhase({ layers, requiredConnections, onComplete }: CanvasProps) {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [quiz, setQuiz] = useState<QuizState | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showFinalReflection, setShowFinalReflection] = useState(false);
   const [validated, setValidated] = useState(false);
 
   const connectedNodeIds = new Set(edges.flatMap(e => [e.source, e.target]));
@@ -357,14 +380,20 @@ function CanvasPhase({ layers, requiredConnections, onComplete }: CanvasProps) {
       !edges.some(e => e.source === req.from && e.target === req.to)
     );
     if (missing.length === 0) {
-      setValidated(true);
-      setTimeout(onComplete, 800);
+      // Show final reflection before completing
+      setShowFinalReflection(true);
     } else {
       const fromLabel = layers.find(l => l.id === missing[0].from)?.label ?? missing[0].from;
       const toLabel = layers.find(l => l.id === missing[0].to)?.label ?? missing[0].to;
       setErrorMsg(`未接続: ${fromLabel} → ${toLabel} など ${missing.length} 箇所残っています`);
       setTimeout(() => setErrorMsg(null), 4000);
     }
+  }
+
+  function handleFinalComplete() {
+    setShowFinalReflection(false);
+    setValidated(true);
+    setTimeout(onComplete, 800);
   }
 
   return (
@@ -397,6 +426,20 @@ function CanvasPhase({ layers, requiredConnections, onComplete }: CanvasProps) {
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 max-w-sm">
             <div className="px-4 py-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-300 text-xs leading-relaxed whitespace-pre-line shadow-xl">
               {errorMsg}
+            </div>
+          </div>
+        )}
+
+        {/* Final reflection overlay */}
+        {showFinalReflection && (
+          <div className="absolute inset-0 bg-slate-950/70 flex items-center justify-center z-50 p-6">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+              <ReflectionQuestion
+                question={PIPELINE_FINAL_REFLECTION.question}
+                options={PIPELINE_FINAL_REFLECTION.options}
+                onComplete={handleFinalComplete}
+                completeLabel="理解しました！パイプライン設計を確定する →"
+              />
             </div>
           </div>
         )}

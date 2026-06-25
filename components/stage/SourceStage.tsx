@@ -2,7 +2,29 @@
 
 import { useState } from 'react';
 import { runSQL } from '@/lib/duckdb/engine';
+import { ReflectionQuestion } from './ReflectionQuestion';
 import type { Quest } from '@/types';
+
+const SOURCE_REFLECTION = {
+  question: 'Source Layer では _loaded_at（取り込み日時）以外のカラムを追加しません。なぜ Source Layer はデータを加工しないのですか？',
+  options: [
+    {
+      label: '生データのまま残すことで、処理が失敗したときに元データから再実行できるようにするため',
+      correct: true,
+      explanation: '✓ 正解！Source 層は「唯一の真実の源（Single Source of Truth）」として機能します。加工前の原本を保持することで、Staging 以降の処理が失敗しても何度でもやり直せます。これが「Source 層は加工しない」という鉄則の理由です。',
+    },
+    {
+      label: '加工するとデータベースの容量が増えてコストがかかるから',
+      correct: false,
+      explanation: 'コストの理由ではありません。中間テーブルを作るほうがむしろ容量は増えます。Source 層を加工しない理由は「再現性の保証」です。原本があれば何度でもやり直せます。',
+    },
+    {
+      label: 'DuckDB の制限で CSV から直接変換できないから',
+      correct: false,
+      explanation: 'DuckDB は CSV から直接変換できます。Source 層を加工しない理由は技術的制約ではなく、データエンジニアリングの設計原則（原本保護）です。',
+    },
+  ],
+};
 
 function parseCsv(content: string) {
   const lines = content.trim().split('\n');
@@ -57,11 +79,12 @@ interface Props {
 
 export function SourceStage({ quest, dbReady, onComplete }: Props) {
   const [activeFile, setActiveFile] = useState(0);
+  const [showReflection, setShowReflection] = useState(false);
   const [loading, setLoading] = useState(false);
   const [createdTables, setCreatedTables] = useState<string[]>([]);
   const [done, setDone] = useState(false);
 
-  async function handleLoad() {
+  async function runLoad() {
     if (!dbReady || loading) return;
     setLoading(true);
     const created: string[] = [];
@@ -80,6 +103,11 @@ export function SourceStage({ quest, dbReady, onComplete }: Props) {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleLoad() {
+    if (!dbReady || loading || done) return;
+    setShowReflection(true);
   }
 
   return (
@@ -127,6 +155,16 @@ export function SourceStage({ quest, dbReady, onComplete }: Props) {
           </ul>
         </div>
 
+        {/* Reflection question — shown when user clicks the button */}
+        {showReflection && !done && (
+          <ReflectionQuestion
+            question={SOURCE_REFLECTION.question}
+            options={SOURCE_REFLECTION.options}
+            onComplete={runLoad}
+            completeLabel="理解しました！Source Layer に格納する →"
+          />
+        )}
+
         {/* Progress */}
         {createdTables.length > 0 && (
           <div className="space-y-1.5">
@@ -141,17 +179,19 @@ export function SourceStage({ quest, dbReady, onComplete }: Props) {
         )}
 
         {/* CTA */}
-        <button
-          onClick={handleLoad}
-          disabled={!dbReady || loading || done}
-          className="w-full py-3.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white"
-        >
-          {done
-            ? '✓ Source Layer への格納完了！'
-            : loading
-            ? <><span className="animate-spin inline-block">⟳</span> 格納中...</>
-            : '▶ Source Layer に格納する'}
-        </button>
+        {!showReflection && (
+          <button
+            onClick={handleLoad}
+            disabled={!dbReady || loading || done}
+            className="w-full py-3.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+          >
+            {done
+              ? '✓ Source Layer への格納完了！'
+              : loading
+              ? <><span className="animate-spin inline-block">⟳</span> 格納中...</>
+              : '▶ Source Layer に格納する'}
+          </button>
+        )}
       </div>
     </div>
   );

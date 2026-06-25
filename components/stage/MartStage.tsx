@@ -2,6 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { runSQL, querySQL } from '@/lib/duckdb/engine';
+import { ReflectionQuestion } from './ReflectionQuestion';
+
+const MART_REFLECTION = {
+  question: 'mart_sales_by_dow を作るとき、status = \'completed\' の注文だけを対象にしました。なぜキャンセルや保留中の注文を除外したのですか？',
+  options: [
+    {
+      label: 'キャンセルや保留中の金額を含めると実際より高い売上が算出され、誤った経営判断につながるから',
+      correct: true,
+      explanation: '✓ 正解！これが Mart 層における「ビジネスロジックの実装」です。CEO が「売上」と言うとき、それはキャンセル済み注文を含まない「確定した売上」を意味します。Mart 層でこの定義を一元化することで、全社で同じ「売上」の数字が使われるようになります。',
+    },
+    {
+      label: 'DuckDB が cancelled や pending の値を処理できないから',
+      correct: false,
+      explanation: 'DuckDB はすべての文字列値を処理できます。除外するのは技術的制約ではなく「正確なビジネスメトリクスを提供する」という設計判断です。',
+    },
+    {
+      label: 'データ量を減らしてクエリを速くするため',
+      correct: false,
+      explanation: 'パフォーマンス改善は副次的効果にすぎません。主な理由は「ビジネスの定義に沿った正確な数字を出す」ことです。間違った数字の経営判断はどんなに速くても意味がありません。',
+    },
+  ],
+};
 
 // ─── Prerequisites ────────────────────────────────────────────────────────────
 
@@ -32,6 +54,7 @@ export function MartStage({ dbReady, onComplete }: Props) {
   const [ready, setReady] = useState(false);
   const [factRowCount, setFactRowCount] = useState<number | null>(null);
   const [groupBy, setGroupBy] = useState<string | null>(null);
+  const [showReflection, setShowReflection] = useState(false);
   const [measures, setMeasures] = useState<string[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -264,8 +287,27 @@ export function MartStage({ dbReady, onComplete }: Props) {
               </table>
             </div>
 
+            {/* Reflection before business decision */}
+            {!showReflection && !answered && (
+              <button
+                onClick={() => setShowReflection(true)}
+                className="w-full py-3 rounded-xl bg-violet-700 hover:bg-violet-600 text-white text-sm font-semibold transition-colors"
+              >
+                💭 この設計の「なぜ」を考える →
+              </button>
+            )}
+
+            {showReflection && !answered && (
+              <ReflectionQuestion
+                question={MART_REFLECTION.question}
+                options={MART_REFLECTION.options}
+                onComplete={() => setShowReflection(false)}
+                completeLabel="理解しました！田村さんに報告する →"
+              />
+            )}
+
             {/* Business decision */}
-            {!answered && (
+            {!showReflection && !answered && (
               <div className="px-4 py-4 rounded-xl border border-purple-500/20 bg-purple-500/5 space-y-3">
                 <p className="text-white text-sm font-medium">田村さんへの報告：最も売上が低い曜日は？</p>
                 <div className="flex gap-2 flex-wrap">

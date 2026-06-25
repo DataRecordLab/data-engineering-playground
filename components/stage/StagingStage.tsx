@@ -2,6 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { runSQL, querySQL } from '@/lib/duckdb/engine';
+import { ReflectionQuestion } from './ReflectionQuestion';
+
+const STAGING_REFLECTION = {
+  question: 'Staging Layer でデータをクレンジングしてから下流に渡す最大の理由はどれですか？',
+  options: [
+    {
+      label: '一箇所でクレンジングすることで、Warehouse・Mart など全ての下流テーブルが正確なデータを使えるようになるから',
+      correct: true,
+      explanation: '✓ 正解！もし Staging を飛ばして各 Mart ごとにクレンジングすると、同じロジックが何十箇所にも散らばります。Staging で一度だけ直せば「下流への汚染を防ぐ唯一のバリア」になります。これが Staging 層の責任です。',
+    },
+    {
+      label: 'SQL のクエリが速くなるから',
+      correct: false,
+      explanation: 'クエリ速度の最適化は Warehouse 層の役割（スタースキーマ・インデックス設計）です。Staging の目的はパフォーマンスではなくデータ品質の保証です。',
+    },
+    {
+      label: 'データ量を削減してストレージコストを下げるから',
+      correct: false,
+      explanation: 'Staging テーブルを作るとむしろデータは増えます。コスト削減が目的ではなく、「下流全体の品質保証」が目的です。',
+    },
+  ],
+};
 
 // ─── Prerequisite SQL ─────────────────────────────────────────────────────────
 
@@ -99,6 +121,7 @@ export function StagingStage({ dbReady, onComplete }: Props) {
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [wrongMsg, setWrongMsg] = useState<string | null>(null);
+  const [showReflection, setShowReflection] = useState(false);
   const [applying, setApplying] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -171,13 +194,30 @@ export function StagingStage({ dbReady, onComplete }: Props) {
             これらの修正を適用して <span className="font-mono text-amber-300">stg_orders / stg_users / stg_products</span> を作成します。
           </div>
 
-          <button
-            onClick={handleApply}
-            disabled={applying || done}
-            className="w-full py-3.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-          >
-            {done ? '✓ Staging Layer 完成！' : applying ? <><span className="animate-spin inline-block">⟳</span>適用中...</> : '▶ 修正を適用する'}
-          </button>
+          {/* Reflection before applying */}
+          {!showReflection && !done && (
+            <button
+              onClick={() => setShowReflection(true)}
+              className="w-full py-3.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm transition-colors"
+            >
+              ▶ 修正を適用する
+            </button>
+          )}
+
+          {showReflection && !done && (
+            <ReflectionQuestion
+              question={STAGING_REFLECTION.question}
+              options={STAGING_REFLECTION.options}
+              onComplete={handleApply}
+              completeLabel="理解しました！Staging Layer を構築する →"
+            />
+          )}
+
+          {done && (
+            <div className="w-full py-3.5 rounded-xl bg-amber-600/50 text-white font-semibold text-sm text-center">
+              ✓ Staging Layer 完成！
+            </div>
+          )}
         </div>
       </div>
     );
