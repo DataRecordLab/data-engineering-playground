@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { runSQL } from '@/lib/duckdb/engine';
+import { runSQL, querySQL } from '@/lib/duckdb/engine';
 
 // ─── Prerequisite SQL ─────────────────────────────────────────────────────────
 
@@ -94,6 +94,7 @@ interface Props {
 
 export function StagingStage({ dbReady, onComplete }: Props) {
   const [ready, setReady] = useState(false);
+  const [sourceRowCount, setSourceRowCount] = useState<number | null>(null);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<string | null>(null);
@@ -107,6 +108,8 @@ export function StagingStage({ dbReady, onComplete }: Props) {
       for (const sql of SOURCE_SQL) {
         try { await runSQL(sql); } catch { /* already exists */ }
       }
+      const res = await querySQL('SELECT COUNT(*) AS cnt FROM src_orders');
+      if (!res.error && res.rows[0]) setSourceRowCount(Number(res.rows[0].cnt));
       setReady(true);
     })();
   }, [dbReady]);
@@ -184,6 +187,18 @@ export function StagingStage({ dbReady, onComplete }: Props) {
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-xl mx-auto p-6 space-y-5">
+
+        {/* Lineage banner */}
+        {sourceRowCount !== null && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/8 border border-indigo-500/15 text-xs text-indigo-400">
+            <span className="font-mono bg-indigo-500/15 px-1.5 py-0.5 rounded text-[11px]">src_orders</span>
+            <span className="text-slate-600">から</span>
+            <span className="font-bold text-indigo-300">{sourceRowCount}行</span>
+            <span className="text-slate-600">を受け取りました → クレンジングして</span>
+            <span className="font-mono bg-amber-500/15 px-1.5 py-0.5 rounded text-[11px] text-amber-400">stg_orders</span>
+            <span className="text-slate-600">へ</span>
+          </div>
+        )}
 
         {/* Progress bar */}
         <div className="flex items-center gap-2">

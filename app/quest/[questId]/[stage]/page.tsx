@@ -7,10 +7,15 @@ import { getQuest } from '@/lib/scenarios';
 import { registerCsvFile } from '@/lib/duckdb/engine';
 import { StageCompleteOverlay } from '@/components/stage/StageCompleteOverlay';
 import { QuestPipelineDesigner } from '@/components/pipeline/QuestPipelineDesigner';
+import { PipelineProgressBar } from '@/components/pipeline/PipelineProgressBar';
 import { SourceStage } from '@/components/stage/SourceStage';
 import { StagingStage } from '@/components/stage/StagingStage';
 import { WarehouseStage } from '@/components/stage/WarehouseStage';
 import { MartStage } from '@/components/stage/MartStage';
+import { SaasSourceStage } from '@/components/stage/SaasSourceStage';
+import { SaasStagingStage } from '@/components/stage/SaasStagingStage';
+import { SaasWarehouseStage } from '@/components/stage/SaasWarehouseStage';
+import { SaasMartStage } from '@/components/stage/SaasMartStage';
 import { saveStageProgress } from '@/lib/supabase/progress';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import type { QuestId, StageId } from '@/types';
@@ -105,6 +110,7 @@ export default function StagePage() {
           <span className="text-slate-700">/</span>
           <span className="text-slate-300 text-sm font-medium">{stage.title}</span>
         </header>
+        <PipelineProgressBar questId={questId} stages={quest.stages} currentStageId={stageId} currentStageIndex={stageIndex} />
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
           <aside className="w-48 border-r border-slate-800 bg-slate-900/60 flex-shrink-0 overflow-y-auto">
@@ -196,6 +202,7 @@ export default function StagePage() {
           </span>
         )}
       </header>
+      <PipelineProgressBar questId={questId} stages={quest.stages} currentStageId={stageId} currentStageIndex={stageIndex} />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Stage progress sidebar */}
@@ -227,10 +234,21 @@ export default function StagePage() {
 
         {/* Right: GUI stage content */}
         <div className="flex-1 overflow-hidden">
-          {stageId === 'source' && <SourceStage quest={quest} dbReady={dbReady} onComplete={guiOnComplete} />}
-          {stageId === 'staging' && <StagingStage dbReady={dbReady} onComplete={guiOnComplete} />}
-          {stageId === 'warehouse' && <WarehouseStage dbReady={dbReady} onComplete={guiOnComplete} />}
-          {stageId === 'mart' && <MartStage dbReady={dbReady} onComplete={guiOnComplete} />}
+          {questId === 'saas' ? (
+            <>
+              {stageId === 'source' && <SaasSourceStage quest={quest} dbReady={dbReady} onComplete={guiOnComplete} />}
+              {stageId === 'staging' && <SaasStagingStage dbReady={dbReady} onComplete={guiOnComplete} />}
+              {stageId === 'warehouse' && <SaasWarehouseStage dbReady={dbReady} onComplete={guiOnComplete} />}
+              {stageId === 'mart' && <SaasMartStage dbReady={dbReady} onComplete={guiOnComplete} />}
+            </>
+          ) : (
+            <>
+              {stageId === 'source' && <SourceStage quest={quest} dbReady={dbReady} onComplete={guiOnComplete} />}
+              {stageId === 'staging' && <StagingStage dbReady={dbReady} onComplete={guiOnComplete} />}
+              {stageId === 'warehouse' && <WarehouseStage dbReady={dbReady} onComplete={guiOnComplete} />}
+              {stageId === 'mart' && <MartStage dbReady={dbReady} onComplete={guiOnComplete} />}
+            </>
+          )}
         </div>
       </div>
     </div>

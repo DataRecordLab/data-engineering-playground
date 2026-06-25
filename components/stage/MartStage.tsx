@@ -30,6 +30,7 @@ interface Props {
 
 export function MartStage({ dbReady, onComplete }: Props) {
   const [ready, setReady] = useState(false);
+  const [factRowCount, setFactRowCount] = useState<number | null>(null);
   const [groupBy, setGroupBy] = useState<string | null>(null);
   const [measures, setMeasures] = useState<string[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
@@ -45,6 +46,8 @@ export function MartStage({ dbReady, onComplete }: Props) {
       for (const sql of PREREQ_SQL) {
         try { await runSQL(sql); } catch { /* already exists */ }
       }
+      const res = await querySQL('SELECT COUNT(*) AS cnt FROM fact_orders');
+      if (!res.error && res.rows[0]) setFactRowCount(Number(res.rows[0].cnt));
       setReady(true);
     })();
   }, [dbReady]);
@@ -115,6 +118,18 @@ export function MartStage({ dbReady, onComplete }: Props) {
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-2xl mx-auto p-6 space-y-6">
+
+        {/* Lineage banner */}
+        {factRowCount !== null && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/8 border border-emerald-500/15 text-xs text-emerald-400">
+            <span className="font-mono bg-emerald-500/15 px-1.5 py-0.5 rounded text-[11px]">fact_orders</span>
+            <span className="text-slate-600">から</span>
+            <span className="font-bold text-emerald-300">{factRowCount}行</span>
+            <span className="text-slate-600">を受け取り → KPI集計して</span>
+            <span className="font-mono bg-rose-500/15 px-1.5 py-0.5 rounded text-[11px] text-rose-400">mart_sales_by_dow</span>
+            <span className="text-slate-600">へ</span>
+          </div>
+        )}
 
         {/* Business question */}
         <div className="px-5 py-4 rounded-xl border border-purple-500/30 bg-purple-500/10">
