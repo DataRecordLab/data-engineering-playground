@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useGameStore } from '@/lib/store/gameStore';
 
 export interface ReflectionOption {
   label: string;
@@ -18,11 +19,15 @@ interface Props {
 export function ReflectionQuestion({ question, options, onComplete, completeLabel }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
+  const loseHp = useGameStore(s => s.loseHp);
+  const triggerJump = useGameStore(s => s.triggerJump);
 
   function handleSelect(i: number) {
     if (answered) return;
     setSelected(i);
     setAnswered(true);
+    if (options[i].correct) triggerJump();
+    else loseHp();
   }
 
   const selectedOpt = selected !== null ? options[selected] : null;

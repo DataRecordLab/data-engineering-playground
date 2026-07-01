@@ -39,6 +39,22 @@ export async function middleware(request: NextRequest) {
   if (!user && pathname.startsWith('/onboarding')) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
+  if (!user && pathname.startsWith('/skills')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  if (!user && pathname.startsWith('/debug')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  if (!user && pathname.startsWith('/pipeline')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  if (!user && pathname.startsWith('/dbt')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  // /profile は要ログイン、/profile/[userId] は公開
+  if (!user && pathname === '/profile') {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
 
   // ログイン済み → /login, /signup はダッシュボードへリダイレクト
   if (user && (pathname === '/login' || pathname === '/signup')) {
@@ -49,5 +65,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/quest/:path*', '/onboarding/:path*', '/login', '/signup'],
+  matcher: ['/dashboard/:path*', '/quest/:path*', '/onboarding/:path*', '/skills/:path*', '/debug/:path*', '/pipeline/:path*', '/dbt/:path*', '/profile', '/login', '/signup'],
 };

@@ -174,6 +174,126 @@ export const PRESET_CHARACTERS: { name: string; config: CharacterConfig }[] = [
   },
 ];
 
+// ── Skills (Duolingo-style) ──────────────────────────────────────────
+
+export type SkillQuestionType = 'multiple_choice' | 'true_false' | 'ordering';
+
+interface BaseQuestion {
+  id: string;
+  type: SkillQuestionType;
+  question: string;
+  explanation: string;
+}
+
+export interface MultipleChoiceQuestion extends BaseQuestion {
+  type: 'multiple_choice';
+  options: { label: string; correct: boolean }[];
+}
+
+export interface TrueFalseQuestion extends BaseQuestion {
+  type: 'true_false';
+  correct: boolean;
+}
+
+export interface OrderingQuestion extends BaseQuestion {
+  type: 'ordering';
+  items: string[];
+  correctOrder: number[];
+}
+
+export type SkillQuestion = MultipleChoiceQuestion | TrueFalseQuestion | OrderingQuestion;
+
+export interface SkillLesson {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  xpReward: number;
+  questions: SkillQuestion[];
+}
+
+export interface SkillSection {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  accent: string;
+  bg: string;
+  lessons: SkillLesson[];
+  upsell?: {
+    questId: QuestId;
+    message: string;
+    label: string;
+  };
+}
+
+// ── Debug Game ───────────────────────────────────────────────────────
+
+export type DebugCategory =
+  | 'data_quality'
+  | 'pipeline_design'
+  | 'schema_drift'
+  | 'timezone'
+  | 'environment';
+
+export type DebugDifficulty = 'beginner' | 'intermediate' | 'advanced';
+export type DebugPhase = 'alert' | 'investigate' | 'diagnose' | 'fix' | 'verify' | 'debrief';
+
+export interface DebugHint {
+  id: string;
+  label: string;
+  sql: string;
+}
+
+export interface DebugDiagnosisOption {
+  id: string;
+  label: string;
+  correct: boolean;
+  explanation: string;
+}
+
+export interface DebugFixOption {
+  id: string;
+  label: string;
+  sqlPreview: string;
+  correct: boolean;
+  explanation: string;
+  fixSQL: string;
+}
+
+export interface DebugScenario {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: DebugCategory;
+  difficulty: DebugDifficulty;
+  xpReward: number;
+  alert: {
+    from: string;
+    role: string;
+    message: string;
+    metric: string;
+    expectedValue: string;
+    actualValue: string;
+    timestamp: string;
+  };
+  setupSQL: string;
+  availableTables: string[];
+  investigationHints: DebugHint[];
+  diagnosisQuestion: string;
+  diagnosisOptions: DebugDiagnosisOption[];
+  fixQuestion: string;
+  fixOptions: DebugFixOption[];
+  verificationSQL: string;
+  verificationExpectedDescription: string;
+  lesson: {
+    title: string;
+    body: string;
+    prevention: string[];
+    realWorldExample: string;
+  };
+}
+
 // User / Auth
 
 export type UserPlan = 'free' | 'pro' | 'team';

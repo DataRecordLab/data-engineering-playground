@@ -179,18 +179,44 @@ export default function QuestOpeningPage() {
           </div>
 
           {/* CTA */}
-          <div className="flex items-center justify-between pt-6 border-t border-slate-800">
-            <div>
-              <p className="text-slate-500 text-xs mb-0.5">最初のステージ</p>
-              <p className="text-white font-semibold">{firstStage.title}</p>
-              <p className="text-slate-500 text-xs mt-0.5">{firstStage.conceptTaught}</p>
+          <div className="pt-6 border-t border-slate-800 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              {/* Canvas Mode — new unified experience */}
+              <Link
+                href={`/pipeline/${questId}`}
+                className="group relative flex flex-col gap-2 rounded-2xl border-2 border-blue-500/40 bg-blue-500/8 hover:bg-blue-500/14 hover:border-blue-500/60 px-5 py-4 transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🗺️</span>
+                  <span className="text-white font-black text-sm">キャンバスモード</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-500/30 text-blue-300 border border-blue-500/30">NEW</span>
+                </div>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  全4レイヤーを1つのキャンバスで設計・実装。<br/>ノードをクリックしてパイプラインを構築。
+                </p>
+                <div className="flex items-center gap-1 text-blue-400 text-xs font-bold group-hover:translate-x-0.5 transition-transform">
+                  キャンバスで始める →
+                </div>
+              </Link>
+
+              {/* Classic Mode */}
+              <Link
+                href={`/quest/${questId}/${firstStage.id}`}
+                className="flex flex-col gap-2 rounded-2xl border border-slate-700 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-600 px-5 py-4 transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">⚔️</span>
+                  <span className="text-white font-semibold text-sm">クラシックモード</span>
+                </div>
+                <p className="text-slate-500 text-xs leading-relaxed">
+                  ステージを一つずつ攻略。<br/>設計クイズ → SQL実装を順番に進める。
+                </p>
+                <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
+                  ステップで始める →
+                </div>
+              </Link>
             </div>
-            <Link
-              href={`/quest/${questId}/${firstStage.id}`}
-              className="px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors"
-            >
-              設計を始める →
-            </Link>
+            <p className="text-center text-slate-700 text-[10px]">どちらのモードでも XP・バッジは同じく獲得できます</p>
           </div>
         </main>
       </div>
