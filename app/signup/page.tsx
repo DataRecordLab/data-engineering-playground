@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const teamOrgId = searchParams.get('team'); // 招待リンク経由の場合
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -27,7 +29,6 @@ export default function SignupPage() {
     setLoading(true);
 
     if (!isSupabaseConfigured()) {
-      // Dev mode: skip auth, go straight to onboarding
       router.push('/onboarding');
       return;
     }
@@ -36,7 +37,11 @@ export default function SignupPage() {
     const { error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${location.origin}/onboarding` },
+      options: {
+        emailRedirectTo: `${location.origin}/onboarding`,
+        // 招待リンク経由の場合、org_idをメタデータに含める
+        data: teamOrgId ? { invited_org_id: teamOrgId } : undefined,
+      },
     });
     if (authError) {
       setError(authError.message);
@@ -115,11 +120,18 @@ export default function SignupPage() {
             </button>
           </form>
 
-          {/* Plan notice */}
-          <div className="mt-5 px-4 py-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
-            <p className="text-blue-400 text-xs font-medium mb-1">Freeプランで開始</p>
-            <p className="text-slate-500 text-xs">Quest 1を無料体験。Proプラン（¥980/月）で全クエスト＋キャラクター全カスタマイズ解放。</p>
-          </div>
+            {/* 招待経由バナー or 通常バナー */}
+          {teamOrgId ? (
+            <div className="mt-5 px-4 py-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+              <p className="text-indigo-400 text-xs font-bold mb-1">🔗 チーム研修に招待されています</p>
+              <p className="text-slate-400 text-xs">登録完了後、チームのorganizationに自動で参加されます。</p>
+            </div>
+          ) : (
+            <div className="mt-5 px-4 py-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
+              <p className="text-blue-400 text-xs font-medium mb-1">Freeプランで開始</p>
+              <p className="text-slate-500 text-xs">Quest 1を無料体験。Proプラン（¥980/月）で全クエスト＋キャラクター全カスタマイズ解放。</p>
+            </div>
+          )}
 
           <div className="mt-6 pt-6 border-t border-slate-800 text-center">
             <p className="text-slate-500 text-xs">
@@ -132,5 +144,13 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
   );
 }

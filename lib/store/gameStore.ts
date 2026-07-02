@@ -1,6 +1,8 @@
 'use client';
 
 import { create } from 'zustand';
+import { DEFAULT_CHARACTER_CONFIG } from '@/types';
+import type { CharacterConfig } from '@/types';
 
 type PlayerAnim = 'idle' | 'jump' | 'damage';
 
@@ -9,11 +11,14 @@ interface GameStore {
   maxHp: number;
   damageFlash: boolean;
   playerAnim: PlayerAnim;
+  characterConfig: CharacterConfig;
+  characterConfigLoaded: boolean;
   loseHp: () => void;
   recoverAll: () => void;
   resetFlash: () => void;
   triggerJump: () => void;
   resetAnim: () => void;
+  setCharacterConfig: (config: CharacterConfig) => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -21,6 +26,8 @@ export const useGameStore = create<GameStore>((set) => ({
   maxHp: 5,
   damageFlash: false,
   playerAnim: 'idle',
+  characterConfig: DEFAULT_CHARACTER_CONFIG,
+  characterConfigLoaded: false,
 
   loseHp: () =>
     set((state) => ({
@@ -37,4 +44,7 @@ export const useGameStore = create<GameStore>((set) => ({
   triggerJump: () => set({ playerAnim: 'jump' }),
 
   resetAnim: () => set({ playerAnim: 'idle' }),
+
+  setCharacterConfig: (config: CharacterConfig) =>
+    set({ characterConfig: config, characterConfigLoaded: true }),
 }));

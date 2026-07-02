@@ -19,12 +19,10 @@ export function Sprite({ grid, scale = 4, className, style }: SpriteProps) {
       className={className}
       aria-hidden
     >
-      {grid.map((row, y) =>
-        row.map((color, x) =>
-          color ? (
-            <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={color} />
-          ) : null
-        )
+      {grid.flatMap((row, y) =>
+        row.map((color, x) => (
+          <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={color ?? 'none'} />
+        ))
       )}
     </svg>
   );

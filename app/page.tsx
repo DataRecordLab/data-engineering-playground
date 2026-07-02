@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { MioBadge } from '@/components/characters/MioBadge';
 
 // ── 定数 ────────────────────────────────────────────────────────────
 
@@ -41,10 +42,40 @@ const FEATURES = [
     accent: '#FCD34D',
   },
   {
-    icon: '🤖',
-    title: 'AIレビュー',
-    body: '田中シニアエンジニアがコードではなく「設計思想」を評価。なぜその設計なのかを深く学べる。',
+    icon: '🔬',
+    title: '実践Lab',
+    body: 'インクリメンタルロード・データリネージ・DAGオーケストレーションを動かして学べるインタラクティブLabを搭載。',
     accent: '#34D399',
+  },
+] as const;
+
+const LABS = [
+  {
+    href: '/incremental',
+    icon: '🔄',
+    badge: 'NEW',
+    title: 'Incremental Load Lab',
+    desc: 'Full Load・Incremental・Upsert・CDCを実際に動かして比較。なぜCDCが最強なのかを体感する。',
+    accent: '#34D399',
+    tag: 'データ取り込み',
+  },
+  {
+    href: '/lineage',
+    icon: '🕸️',
+    badge: 'NEW',
+    title: 'Data Lineage Visualizer',
+    desc: 'テーブルノードをクリックして上流・下流依存を可視化。カラムレベルのリネージまで追跡できる。',
+    accent: '#818CF8',
+    tag: 'データガバナンス',
+  },
+  {
+    href: '/dag',
+    icon: '⚡',
+    badge: 'NEW',
+    title: 'DAG Orchestration Lab',
+    desc: 'パイプラインのDAGを実際に実行。タスクの依存関係・並列実行・失敗伝播をリアルタイムで観察。',
+    accent: '#F59E0B',
+    tag: 'オーケストレーション',
   },
 ] as const;
 
@@ -252,7 +283,7 @@ export default function Page() {
               { icon: '⚔️', text: 'クエストRPG — 業界別ストーリーで実践' },
               { icon: '❤️', text: 'HPシステム — 失敗は痛い、正解でジャンプ！' },
               { icon: '⭐', text: 'XP×レベルアップ — 成長が数字で見える' },
-              { icon: '🤖', text: 'AIレビュー — 設計思想をフィードバック' },
+              { icon: '🔬', text: '実践Lab — インクリメンタル・リネージ・DAGを動かす' },
             ].map(({ icon, text }) => (
               <div key={text} className="flex items-center gap-2 text-sm text-slate-300">
                 <span className="text-base leading-none">{icon}</span>
@@ -262,7 +293,7 @@ export default function Page() {
           </div>
 
           {/* CTA */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 mb-8">
             <Link
               href="/signup"
               className="flex items-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm transition-all hover:scale-105 hover:shadow-xl hover:shadow-indigo-500/30"
@@ -276,6 +307,13 @@ export default function Page() {
               まず試してみる
             </Link>
           </div>
+
+          {/* マスコット */}
+          <MioBadge
+            expression="excited"
+            message="一緒にデータエンジニアリングを学ぼう！無料で始められるよ ✦"
+            scale={5}
+          />
         </div>
 
         {/* 右：ゲーム画面プレビュー */}
@@ -330,6 +368,68 @@ export default function Page() {
         </div>
       </section>
 
+      {/* ── 実践Lab ── */}
+      <section className="relative z-10 px-6 py-16 max-w-7xl mx-auto">
+        <div className="text-center mb-10">
+          <p className="text-emerald-400 text-[10px] font-black tracking-widest uppercase mb-2 font-mono">
+            INTERACTIVE LABS
+          </p>
+          <h2 className="text-3xl font-black">手を動かして学ぶ、実践Lab</h2>
+          <p className="text-slate-500 text-sm mt-2">
+            現場で使われる設計パターンをブラウザ上でシミュレーション
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {LABS.map((lab) => (
+            <Link
+              key={lab.href}
+              href={lab.href}
+              className="group relative rounded-2xl border border-slate-800 bg-slate-900/50 p-6 hover:border-slate-600 transition-all hover:-translate-y-1 overflow-hidden"
+            >
+              {/* glow accent */}
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity rounded-2xl"
+                style={{ background: lab.accent }}
+              />
+
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-4">
+                  <span className="text-3xl">{lab.icon}</span>
+                  <span
+                    className="px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider border"
+                    style={{ color: lab.accent, borderColor: `${lab.accent}40`, background: `${lab.accent}10` }}
+                  >
+                    {lab.badge}
+                  </span>
+                </div>
+
+                <div
+                  className="w-8 h-0.5 rounded-full mb-3 transition-all group-hover:w-14"
+                  style={{ background: lab.accent }}
+                />
+
+                <p
+                  className="text-[10px] font-bold mb-1 font-mono tracking-wide"
+                  style={{ color: lab.accent }}
+                >
+                  {lab.tag}
+                </p>
+                <h3 className="font-black text-white text-base mb-2">{lab.title}</h3>
+                <p className="text-slate-500 text-xs leading-relaxed">{lab.desc}</p>
+
+                <div
+                  className="mt-4 flex items-center gap-1 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ color: lab.accent }}
+                >
+                  Labを開く →
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* ── 特徴グリッド ── */}
       <section className="relative z-10 px-6 py-16 max-w-7xl mx-auto">
         <div className="text-center mb-10">
@@ -354,6 +454,50 @@ export default function Page() {
               <p className="text-slate-500 text-xs leading-relaxed">{f.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── 学習パス ── */}
+      <section className="relative z-10 px-6 py-16 max-w-4xl mx-auto">
+        <div className="text-center mb-10">
+          <p className="text-indigo-400 text-[10px] font-black tracking-widest uppercase mb-2 font-mono">
+            LEARNING PATH
+          </p>
+          <h2 className="text-3xl font-black">データエンジニアになる6ステップ</h2>
+        </div>
+
+        <div className="relative">
+          {/* 縦線 */}
+          <div className="absolute left-5 top-2 bottom-2 w-px bg-slate-800 hidden md:block" />
+
+          <div className="space-y-4">
+            {[
+              { step: '01', title: 'Source Layer',    desc: '生データの取り込み・保持の概念を掴む',        accent: '#A78BFA', icon: '⛏️' },
+              { step: '02', title: 'Staging Layer',   desc: '型変換・正規化・クレンジングで品質を担保する', accent: '#34D399', icon: '🌿' },
+              { step: '03', title: 'Warehouse Layer', desc: 'スタースキーマ・fact/dim設計でモデリング',    accent: '#F87171', icon: '🌋' },
+              { step: '04', title: 'Mart Layer',      desc: 'KPI・分析用テーブルで意思決定を支える',       accent: '#FCD34D', icon: '🏰' },
+              { step: '05', title: 'パイプライン設計', desc: 'DAG・依存関係・スケジューリングを設計する',   accent: '#F59E0B', icon: '⚡' },
+              { step: '06', title: 'データ品質',      desc: 'リネージ・ガバナンス・モニタリングで守る',    accent: '#818CF8', icon: '🔬' },
+            ].map((item) => (
+              <div key={item.step} className="flex items-start gap-5 group">
+                <div
+                  className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm transition-all group-hover:scale-110"
+                  style={{ borderColor: `${item.accent}60`, background: `${item.accent}10` }}
+                >
+                  {item.icon}
+                </div>
+                <div className="flex-1 pt-1.5 pb-4 border-b border-slate-900">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[10px] font-mono font-bold" style={{ color: item.accent }}>
+                      STEP {item.step}
+                    </span>
+                  </div>
+                  <p className="font-black text-white text-sm">{item.title}</p>
+                  <p className="text-slate-500 text-xs mt-0.5">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

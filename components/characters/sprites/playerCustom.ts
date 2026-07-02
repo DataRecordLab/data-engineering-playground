@@ -70,18 +70,19 @@ function faceRows(skin: string, hasGlasses: boolean, glassesColor: string): Pixe
 
 // ─── Body rows (rows 9-15) by outfit style ───────────────────────────────────
 
-function bodyRows(outfit: string, style: OutfitStyle): PixelGrid {
+function bodyRows(outfit: string, style: OutfitStyle, skin: string): PixelGrid {
   const o = outfit;
   const lo = lighten(outfit);  // highlight color
   const p = '#1E293B';         // pants
+  const sk = skin;
 
   switch (style) {
     case 'hoodie':
       return [
         [_,_,_,b,o,o,o,o,o,o,o,b,_,_,_,_],
         [_,_,b,o,o,o,lo,lo,o,o,o,o,b,_,_,_],
-        [_,b,'#F5CBA7',o,o,o,o,o,o,o,o,o,'#F5CBA7',b,_,_],
-        [_,b,'#F5CBA7',o,o,o,o,o,o,o,o,o,'#F5CBA7',b,_,_],
+        [_,b,sk,o,o,o,o,o,o,o,o,o,sk,b,_,_],
+        [_,b,sk,o,o,o,o,o,o,o,o,o,sk,b,_,_],
         [_,_,b,o,o,o,o,o,o,o,o,o,b,_,_,_],
         [_,_,b,p,p,p,b,_,b,p,p,p,b,_,_,_],
         [_,_,_,p,p,_,_,_,_,_,p,p,_,_,_,_],
@@ -90,8 +91,8 @@ function bodyRows(outfit: string, style: OutfitStyle): PixelGrid {
       return [
         [_,_,_,b,o,o,b,b,b,o,o,b,_,_,_,_],
         [_,_,b,o,o,o,o,o,o,o,o,o,b,_,_,_],
-        [_,b,'#F5CBA7',o,o,o,o,o,o,o,o,o,'#F5CBA7',b,_,_],
-        [_,b,'#F5CBA7',o,o,o,o,o,o,o,o,o,'#F5CBA7',b,_,_],
+        [_,b,sk,o,o,o,o,o,o,o,o,o,sk,b,_,_],
+        [_,b,sk,o,o,o,o,o,o,o,o,o,sk,b,_,_],
         [_,_,b,o,o,o,o,o,o,o,o,o,b,_,_,_],
         [_,_,b,p,p,p,b,_,b,p,p,p,b,_,_,_],
         [_,_,_,p,p,_,_,_,_,_,p,p,_,_,_,_],
@@ -100,8 +101,8 @@ function bodyRows(outfit: string, style: OutfitStyle): PixelGrid {
       return [
         [_,_,_,b,o,o,b,b,b,o,o,b,_,_,_,_],
         [_,_,b,o,o,b,'#E5E7EB','#E5E7EB',b,o,o,o,b,_,_,_],
-        [_,b,'#F5CBA7',o,b,'#E5E7EB','#E5E7EB','#E5E7EB','#E5E7EB',b,o,o,'#F5CBA7',b,_,_],
-        [_,b,'#F5CBA7',o,b,'#E5E7EB','#E5E7EB','#E5E7EB','#E5E7EB',b,o,o,'#F5CBA7',b,_,_],
+        [_,b,sk,o,b,'#E5E7EB','#E5E7EB','#E5E7EB','#E5E7EB',b,o,o,sk,b,_,_],
+        [_,b,sk,o,b,'#E5E7EB','#E5E7EB','#E5E7EB','#E5E7EB',b,o,o,sk,b,_,_],
         [_,_,b,o,o,o,o,o,o,o,o,o,b,_,_,_],
         [_,_,b,p,p,p,b,_,b,p,p,p,b,_,_,_],
         [_,_,_,p,p,_,_,_,_,_,p,p,_,_,_,_],
@@ -111,8 +112,8 @@ function bodyRows(outfit: string, style: OutfitStyle): PixelGrid {
       return [
         [_,_,_,b,o,o,T,T,o,o,o,b,_,_,_,_],
         [_,_,b,o,o,o,T,T,T,o,o,o,b,_,_,_],
-        [_,b,'#F5CBA7',o,o,o,T,T,T,o,o,o,'#F5CBA7',b,_,_],
-        [_,b,'#F5CBA7',o,lo,o,o,o,o,o,lo,o,'#F5CBA7',b,_,_],
+        [_,b,sk,o,o,o,T,T,T,o,o,o,sk,b,_,_],
+        [_,b,sk,o,lo,o,o,o,o,o,lo,o,sk,b,_,_],
         [_,_,b,o,o,o,o,o,o,o,o,o,b,_,_,_],
         [_,_,b,p,p,p,b,_,b,p,p,p,b,_,_,_],
         [_,_,_,p,p,_,_,_,_,_,p,p,_,_,_,_],
@@ -136,6 +137,6 @@ export function buildPlayerSprite(config: CharacterConfig): PixelGrid {
   return [
     ...hairRows(config.hairColor, config.hairStyle),
     ...faceRows(config.skinTone, config.hasGlasses, config.glassesColor),
-    ...bodyRows(config.outfitColor, config.outfitStyle),
+    ...bodyRows(config.outfitColor, config.outfitStyle, config.skinTone),
   ];
 }

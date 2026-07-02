@@ -1,11 +1,20 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { WorldMapClient } from '@/components/map/WorldMapClient';
+import { LogoutButton } from '@/components/auth/LogoutButton';
 import { QUESTS } from '@/lib/scenarios';
 import { StreakBadge } from '@/components/streak/StreakBadge';
+import { DailyMissionPanel } from '@/components/daily/DailyMissionPanel';
 import type { QuestId, StageId } from '@/types';
 
 const XP_PER_LEVEL = 500;
+
+// WorldMap の DISTRICTS と同じロック条件
+const QUEST_LOCK: Record<string, { minLevel: number; reason: string }> = {
+  'saas':    { minLevel: 3, reason: 'Lv.3 が必要' },
+  'medical': { minLevel: 3, reason: 'Lv.3 が必要' },
+  'finance': { minLevel: 5, reason: 'Lv.5 + 中級2本完了' },
+};
 
 interface StageProgressRow {
   quest_id: string;
@@ -28,22 +37,55 @@ function StarsDisplay({ stars }: { stars: number }) {
 function QuestProgressCard({
   questId,
   progress,
+  userLevel,
 }: {
   questId: QuestId;
   progress: StageProgressRow[];
+  userLevel: number;
 }) {
   const quest = QUESTS[questId];
   if (!quest) return null;
 
+  const lock = QUEST_LOCK[questId];
+  const isLocked = lock ? userLevel < lock.minLevel : false;
+
+  // ── ロック状態 ──
+  if (isLocked) {
+    const diffColor = {
+      beginner: 'text-green-600 border-green-900/40 bg-green-900/10',
+      intermediate: 'text-amber-700 border-amber-900/30 bg-amber-900/10',
+      advanced: 'text-red-700 border-red-900/30 bg-red-900/10',
+    }[quest.difficulty];
+
+    return (
+      <div className="rounded-xl border border-slate-800/60 bg-slate-900/30 p-3 opacity-60">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="min-w-0">
+            <p className="text-slate-500 text-xs font-semibold leading-tight truncate">{quest.title}</p>
+            <p className="text-slate-700 text-[10px] mt-0.5 truncate">{quest.clientName}</p>
+          </div>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded border flex-shrink-0 font-medium ${diffColor}`}>
+            {quest.difficulty === 'beginner' ? '初級' : quest.difficulty === 'intermediate' ? '中級' : '上級'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] text-slate-700">🔒 {lock.reason}</span>
+          <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold text-slate-700 border border-slate-800 cursor-not-allowed">
+            ロック中
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 通常状態 ──
   const questProgress = progress.filter(p => p.quest_id === questId);
   const completedIds = new Set(questProgress.map(p => p.stage));
 
-  // pipelineステージを除いた実装ステージのみ対象
   const implStages = quest.stages.filter(s => s.type !== 'pipeline');
   const completedCount = implStages.filter(s => completedIds.has(s.id)).length;
   const totalCount = implStages.length;
 
-  // 続きから：最初の未完了ステージ
   const firstIncomplete = quest.stages.find(s => !completedIds.has(s.id));
   const resumeUrl = firstIncomplete
     ? `/quest/${questId}/${firstIncomplete.id}`
@@ -126,13 +168,14 @@ export default async function DashboardPage() {
   let displayName = '';
   let plan: 'free' | 'pro' = 'free';
   let streakCount = 0;
+  let userRole = 'member';
   let progress: StageProgressRow[] = [];
 
   if (user) {
     const [profileRes, progressRes] = await Promise.all([
       supabase
         .from('users')
-        .select('level, total_xp, display_name, plan, streak_count')
+        .select('level, total_xp, display_name, plan, streak_count, role')
         .eq('id', user.id)
         .single(),
       supabase
@@ -146,6 +189,7 @@ export default async function DashboardPage() {
     displayName = profileRes.data?.display_name ?? '';
     plan = (profileRes.data?.plan as 'free' | 'pro') ?? 'free';
     streakCount = (profileRes.data?.streak_count as number) ?? 0;
+    userRole = (profileRes.data?.role as string) ?? 'member';
     progress = (progressRes.data ?? []) as StageProgressRow[];
   }
 
@@ -224,6 +268,8 @@ export default async function DashboardPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Quest progress panel */}
         <aside className="w-56 border-r border-slate-800/60 bg-slate-950/80 flex-shrink-0 flex flex-col overflow-hidden">
+          {/* Scrollable middle section */}
+          <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
           {/* Skills リンク */}
           <Link
             href="/skills"
@@ -257,30 +303,106 @@ export default async function DashboardPage() {
           >
             <span className="text-base font-mono font-bold text-amber-500 text-sm">dbt</span>
             <div>
-              <div className="flex items-center gap-1.5">
-                <p className="text-xs font-bold text-slate-300 group-hover:text-amber-300 transition-colors">dbt Simulator</p>
-                <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/15 border border-amber-500/20 text-amber-500 font-bold">NEW</span>
-              </div>
+              <p className="text-xs font-bold text-slate-300 group-hover:text-amber-300 transition-colors">dbt Simulator</p>
               <p className="text-[9px] text-slate-600">ブラウザで dbt を体験</p>
             </div>
             <span className="ml-auto text-slate-700 text-xs">→</span>
           </Link>
 
-          <div className="p-3 border-b border-slate-800/60">
+          {/* Incremental Lab */}
+          <div className="border-b border-slate-800/60">
+            <Link
+              href="/incremental"
+              className="flex items-center gap-2 px-3 py-2 hover:bg-blue-950/20 transition-colors group"
+            >
+              <span className="text-base">⏱</span>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-slate-300 group-hover:text-blue-300 transition-colors">Incremental Lab</p>
+                  <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/15 border border-amber-500/20 text-amber-400 font-bold">無料</span>
+                </div>
+                <p className="text-[9px] text-slate-600">Full Load を体験する</p>
+              </div>
+            </Link>
+            <Link
+              href="/incremental/quest"
+              className="flex items-center gap-2 pl-8 pr-3 py-1.5 hover:bg-indigo-950/20 transition-colors group"
+            >
+              <span className="text-[10px]">🗺️</span>
+              <p className="text-[10px] text-slate-500 group-hover:text-indigo-300 transition-colors">クエストモード</p>
+              <span className="ml-auto text-[8px] px-1 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/20 text-indigo-400 font-bold">PRO</span>
+            </Link>
+          </div>
+
+          {/* Lineage Lab */}
+          <div className="border-b border-slate-800/60">
+            <Link
+              href="/lineage"
+              className="flex items-center gap-2 px-3 py-2 hover:bg-purple-950/20 transition-colors group"
+            >
+              <span className="text-base">🔗</span>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-slate-300 group-hover:text-purple-300 transition-colors">Lineage Visualizer</p>
+                  <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/15 border border-amber-500/20 text-amber-400 font-bold">無料</span>
+                </div>
+                <p className="text-[9px] text-slate-600">データの流れをトレース</p>
+              </div>
+            </Link>
+            <Link
+              href="/lineage/quest"
+              className="flex items-center gap-2 pl-8 pr-3 py-1.5 hover:bg-indigo-950/20 transition-colors group"
+            >
+              <span className="text-[10px]">🗺️</span>
+              <p className="text-[10px] text-slate-500 group-hover:text-indigo-300 transition-colors">クエストモード</p>
+              <span className="ml-auto text-[8px] px-1 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/20 text-indigo-400 font-bold">PRO</span>
+            </Link>
+          </div>
+
+          {/* DAG Lab */}
+          <div className="border-b border-slate-800/60">
+            <Link
+              href="/dag"
+              className="flex items-center gap-2 px-3 py-2 hover:bg-green-950/20 transition-colors group"
+            >
+              <span className="text-base">🔀</span>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-slate-300 group-hover:text-green-300 transition-colors">DAG Lab</p>
+                  <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/15 border border-amber-500/20 text-amber-400 font-bold">無料</span>
+                </div>
+                <p className="text-[9px] text-slate-600">オーケストレーションを体験</p>
+              </div>
+            </Link>
+            <Link
+              href="/dag/quest"
+              className="flex items-center gap-2 pl-8 pr-3 py-1.5 hover:bg-indigo-950/20 transition-colors group"
+            >
+              <span className="text-[10px]">🗺️</span>
+              <p className="text-[10px] text-slate-500 group-hover:text-indigo-300 transition-colors">クエストモード</p>
+              <span className="ml-auto text-[8px] px-1 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/20 text-indigo-400 font-bold">PRO</span>
+            </Link>
+          </div>
+
+          {/* Daily missions */}
+          <DailyMissionPanel />
+
+          <div className="p-3 border-b border-slate-800/60 flex-shrink-0">
             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">クエスト</p>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-white font-semibold text-sm">{totalCompletedStages}</span>
               <span className="text-slate-600 text-[10px]">ステージクリア</span>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-2">
+          <div className="p-2 space-y-2">
             {questIds.map(qid => (
-              <QuestProgressCard key={qid} questId={qid} progress={progress} />
+              <QuestProgressCard key={qid} questId={qid} progress={progress} userLevel={level} />
             ))}
           </div>
+          </div>{/* end scrollable */}
 
           {/* Bottom stats + leaderboard link */}
-          <div className="p-3 border-t border-slate-800/60 space-y-2">
+          <div className="p-3 border-t border-slate-800/60 space-y-2 flex-shrink-0">
             <div className="grid grid-cols-2 gap-2">
               <div className="text-center">
                 <p className="text-blue-400 font-bold text-sm">{totalXp}</p>
@@ -299,6 +421,15 @@ export default async function DashboardPage() {
             >
               🏆 リーダーボード
             </Link>
+            {(userRole === 'admin' || userRole === 'owner') && (
+              <Link
+                href="/admin"
+                className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-500 hover:text-emerald-400 text-[10px] font-bold transition-colors"
+              >
+                👥 研修管理ダッシュボード
+              </Link>
+            )}
+            <LogoutButton />
           </div>
         </aside>
 

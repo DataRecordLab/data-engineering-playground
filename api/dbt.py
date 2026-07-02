@@ -19,7 +19,24 @@ import os
 import subprocess
 import shutil
 import uuid
+import urllib.request
 from collections import defaultdict
+
+
+def _verify_supabase_token(auth_header: str) -> bool:
+    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "")
+    supabase_anon_key = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
+    if not supabase_url or not supabase_anon_key or not auth_header.startswith("Bearer "):
+        return False
+    try:
+        req = urllib.request.Request(
+            f"{supabase_url}/auth/v1/user",
+            headers={"Authorization": auth_header, "apikey": supabase_anon_key},
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
 
 
 # ─── Project file builders ────────────────────────────────────────────────────
@@ -146,6 +163,11 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
+        auth_header = self.headers.get("Authorization", "")
+        if not _verify_supabase_token(auth_header):
+            self._json_error(401, "Unauthorized")
+            return
+
         try:
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length))

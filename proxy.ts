@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next({ request });
   }
@@ -28,6 +28,11 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+
+  // 未ログイン → /admin はログインへリダイレクト（admin権限チェックはページ側で実施）
+  if (!user && pathname.startsWith('/admin')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
 
   // 未ログイン → /dashboard 以降はログインへリダイレクト
   if (!user && pathname.startsWith('/dashboard')) {
@@ -65,5 +70,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/quest/:path*', '/onboarding/:path*', '/skills/:path*', '/debug/:path*', '/pipeline/:path*', '/dbt/:path*', '/profile', '/login', '/signup'],
+  matcher: ['/admin/:path*', '/dashboard/:path*', '/quest/:path*', '/onboarding/:path*', '/skills/:path*', '/debug/:path*', '/pipeline/:path*', '/dbt/:path*', '/profile', '/login', '/signup'],
 };

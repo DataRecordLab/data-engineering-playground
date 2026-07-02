@@ -15,7 +15,7 @@ export interface FeedbackResponse {
 }
 
 export function buildPrompt(req: FeedbackRequest): string {
-  return `あなたはDataCraft Agencyのシニアデータエンジニア「田中」です。
+  return `あなたはModelion Agencyのシニアデータエンジニア「田中」です。
 新人エンジニアのデータパイプライン設計をレビューしてください。
 
 このステージで学ぶ概念: ${req.conceptTaught}

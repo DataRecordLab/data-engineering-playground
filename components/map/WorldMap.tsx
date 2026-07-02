@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sprite } from '@/components/characters/Sprite';
-import { PLAYER } from '@/components/characters/sprites/player';
+import { buildPlayerSprite } from '@/components/characters/sprites/playerCustom';
+import { useGameStore } from '@/lib/store/gameStore';
+import { createClient } from '@/lib/supabase/client';
+import type { CharacterConfig } from '@/types';
 
 // District definitions
 interface District {
@@ -97,6 +100,28 @@ export function WorldMap() {
   const [playerPos, setPlayerPos] = useState(HQ);
   const [isMoving, setIsMoving] = useState(false);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+
+  const { characterConfig, characterConfigLoaded, setCharacterConfig } = useGameStore();
+
+  // Storeに未ロードのときだけ Supabase から取得
+  useEffect(() => {
+    if (characterConfigLoaded) return;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from('users')
+        .select('character_config')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.character_config) {
+            setCharacterConfig(data.character_config as CharacterConfig);
+          }
+        });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDistrictClick = useCallback(async (d: District) => {
     if (d.status === 'locked' || isMoving) return;
@@ -203,7 +228,7 @@ export function WorldMap() {
             transition: 'transform 0.65s cubic-bezier(0.4,0,0.2,1)',
           }}
         >
-          <PlayerSprite isWalking={isMoving} />
+          <PlayerSprite isWalking={isMoving} config={characterConfig} />
         </g>
       </svg>
 
@@ -417,10 +442,11 @@ function HQBuilding({ cx, cy }: { cx: number; cy: number }) {
   );
 }
 
-function PlayerSprite({ isWalking }: { isWalking: boolean }) {
+function PlayerSprite({ isWalking, config }: { isWalking: boolean; config: CharacterConfig }) {
+  const grid = buildPlayerSprite(config);
   return (
     <g className={isWalking ? 'animate-player-walk' : 'animate-idle-bob'}>
-      <Sprite grid={PLAYER.neutral} scale={4} />
+      <Sprite grid={grid} scale={4} />
     </g>
   );
 }

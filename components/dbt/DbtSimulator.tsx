@@ -13,6 +13,7 @@ import ReactFlow, {
   useNodesState,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { createClient } from '@/lib/supabase/client';
 import { loadCsv, runSQL, querySQL } from '@/lib/duckdb/engine';
 import {
   getExecutionOrder,
@@ -383,6 +384,12 @@ export function DbtSimulator() {
     setRunning(false);
   }
 
+  async function _getAuthHeader(): Promise<string> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    return session ? `Bearer ${session.access_token}` : '';
+  }
+
   // ── dbt run (server) ─────────────────────────────────────────────────────
   async function handleServerRun(selectModels?: string[]) {
     if (running) return;
@@ -408,7 +415,7 @@ export function DbtSimulator() {
 
       const res = await fetch('/api/dbt', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': await _getAuthHeader() },
         body: JSON.stringify(payload),
       });
 
@@ -450,7 +457,7 @@ export function DbtSimulator() {
 
       const res = await fetch('/api/dbt', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': await _getAuthHeader() },
         body: JSON.stringify(payload),
       });
 

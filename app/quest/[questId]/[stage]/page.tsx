@@ -21,14 +21,75 @@ import { saveStageProgress, getUserProgress, getUserProfile } from '@/lib/supaba
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useGameStore } from '@/lib/store/gameStore';
 import type { QuestId, StageId, CharacterConfig } from '@/types';
-import { DEFAULT_CHARACTER_CONFIG } from '@/types';
+import { WorldAtmosphere, type WorldType } from '@/components/stage/WorldAtmosphere';
+import { EmergencyEventModal } from '@/components/events/EmergencyEventModal';
+import { useEmergencyEvent } from '@/hooks/useEmergencyEvent';
+import type { EmergencyEvent } from '@/lib/events/emergencyEvents';
+import { MissionToast } from '@/components/daily/MissionToast';
+import { completeDailyMission } from '@/lib/daily/missions';
 
-const STAGE_THEMES: Record<string, { bg: string; border: string }> = {
-  pipeline:  { bg: 'bg-slate-950',           border: 'border-blue-900/30' },
-  source:    { bg: 'bg-[#080818]',            border: 'border-indigo-900/30' },
-  staging:   { bg: 'bg-[#0f0900]',            border: 'border-amber-900/30' },
-  warehouse: { bg: 'bg-[#001209]',            border: 'border-emerald-900/30' },
-  mart:      { bg: 'bg-[#110008]',            border: 'border-rose-900/30' },
+type WorldTheme = {
+  bgStyle: string;
+  border: string;
+  worldName: string;
+  worldEmoji: string;
+  layerDesc: string;
+  accent: string;
+  sidebarBorderColor: string;
+  particleType: WorldType;
+};
+
+const STAGE_THEMES: Record<string, WorldTheme> = {
+  pipeline: {
+    bgStyle: 'linear-gradient(180deg, #0a0e1a 0%, #06091a 100%)',
+    border: 'border-blue-900/30',
+    worldName: 'パイプライン設計',
+    worldEmoji: '⚙️',
+    layerDesc: 'Pipeline Design — データの流れを設計する',
+    accent: '#3B82F6',
+    sidebarBorderColor: 'rgba(59,130,246,0.15)',
+    particleType: null,
+  },
+  source: {
+    bgStyle: 'linear-gradient(180deg, #04000e 0%, #0a0020 60%, #060018 100%)',
+    border: 'border-violet-900/40',
+    worldName: '洞窟エリア',
+    worldEmoji: '🪨',
+    layerDesc: 'Source Layer — 生データの原点',
+    accent: '#7C3AED',
+    sidebarBorderColor: 'rgba(124,58,237,0.2)',
+    particleType: 'cave',
+  },
+  staging: {
+    bgStyle: 'linear-gradient(180deg, #020c02 0%, #031506 60%, #020e04 100%)',
+    border: 'border-emerald-900/40',
+    worldName: '草原エリア',
+    worldEmoji: '🌿',
+    layerDesc: 'Staging Layer — クレンジングと整形',
+    accent: '#059669',
+    sidebarBorderColor: 'rgba(5,150,105,0.2)',
+    particleType: 'grassland',
+  },
+  warehouse: {
+    bgStyle: 'linear-gradient(180deg, #0e0100 0%, #160200 60%, #100100 100%)',
+    border: 'border-red-900/40',
+    worldName: '火山エリア',
+    worldEmoji: '🌋',
+    layerDesc: 'Warehouse Layer — データモデリング',
+    accent: '#DC2626',
+    sidebarBorderColor: 'rgba(220,38,38,0.2)',
+    particleType: 'volcano',
+  },
+  mart: {
+    bgStyle: 'linear-gradient(180deg, #0a0700 0%, #120e00 60%, #0e0b00 100%)',
+    border: 'border-yellow-900/40',
+    worldName: '城エリア',
+    worldEmoji: '🏰',
+    layerDesc: 'Mart Layer — ビジネス意思決定',
+    accent: '#D97706',
+    sidebarBorderColor: 'rgba(217,119,6,0.2)',
+    particleType: 'castle',
+  },
 };
 
 const XP_PER_LEVEL = 500;
@@ -62,17 +123,27 @@ export default function StagePage() {
   const nextStage = quest?.stages[stageIndex + 1];
   const isLastStage = stageIndex === (quest?.stages.length ?? 0) - 1;
 
-  const { hp, maxHp, damageFlash, recoverAll, resetFlash } = useGameStore();
+  const {
+    hp, maxHp, damageFlash, recoverAll, resetFlash,
+    characterConfig, characterConfigLoaded, setCharacterConfig,
+  } = useGameStore();
   const [gameOver, setGameOver] = useState(false);
-
+  const [worldEntering, setWorldEntering] = useState(true);
+  const [activeEvent, setActiveEvent] = useState<EmergencyEvent | null>(null);
   const [dbReady, setDbReady] = useState(false);
   const [completion, setCompletion] = useState<CompletionData | null>(null);
   const [userLevel, setUserLevel] = useState(1);
   const [userXp, setUserXp] = useState(0);
   const [stageStars, setStageStars] = useState<Record<string, number>>({});
-  const [characterConfig, setCharacterConfig] = useState<CharacterConfig>(DEFAULT_CHARACTER_CONFIG);
 
-  // ユーザーXPとステージ進捗をロード
+  // Random emergency event (25-90s after entering stage, not during completion/gameover/intro)
+  useEmergencyEvent({
+    stageId,
+    enabled: !completion && !gameOver && !worldEntering,
+    onTrigger: setActiveEvent,
+  });
+
+  // ユーザーXPとステージ進捗をロード（characterConfigはstoreから取得・未ロード時のみ fetch）
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
     Promise.all([
@@ -82,7 +153,7 @@ export default function StagePage() {
       if (profile) {
         setUserLevel(profile.level ?? 1);
         setUserXp(profile.total_xp ?? 0);
-        if (profile.character_config) {
+        if (profile.character_config && !characterConfigLoaded) {
           setCharacterConfig(profile.character_config as CharacterConfig);
         }
       }
@@ -90,10 +161,12 @@ export default function StagePage() {
       progress.forEach(p => { starsMap[p.stage] = p.stars; });
       setStageStars(starsMap);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questId]);
 
   useEffect(() => {
     setCompletion(null);
+    setWorldEntering(true);
     recoverAll();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageId]);
@@ -151,6 +224,13 @@ export default function StagePage() {
       }
     }
 
+    // Daily mission triggers
+    completeDailyMission('stage_clear');
+    if (stars === 3) completeDailyMission('star3_any');
+    if (stageId === 'source' || stageId === 'staging' || stageId === 'warehouse' || stageId === 'mart') {
+      completeDailyMission('pipeline_design');
+    }
+
     setCompletion({ stars, xpEarned, newTotalXp, badgeId: stage.badgeId });
   };
 
@@ -200,24 +280,30 @@ export default function StagePage() {
 
   // ── Sidebar helper ─────────────────────────────────────────────────────────
   const StageSidebar = () => (
-    <aside className="w-48 border-r border-slate-800 bg-slate-900/60 flex-shrink-0 overflow-y-auto flex flex-col">
+    <aside
+      className="w-48 flex-shrink-0 overflow-y-auto flex flex-col border-r"
+      style={{ borderColor: theme.sidebarBorderColor, background: 'rgba(0,0,0,0.55)' }}
+    >
       <div className="flex-1 p-3">
         <p className="text-xs text-slate-600 uppercase tracking-wider mb-3 font-medium px-1">パイプライン</p>
         <nav className="space-y-1">
           {quest.stages.map((s, i) => {
             const isCurrent = s.id === stageId;
             const isPast = i < stageIndex;
-            const stars = stageStars[s.id] ?? 0;
-            const done = stars > 0 || (isPast && stageStars[s.id] !== undefined);
             return (
               <Link
                 key={s.id}
                 href={`/quest/${questId}/${s.id}`}
                 className={`flex items-start gap-2 px-3 py-2 rounded-lg text-xs transition-colors ${
-                  isCurrent ? 'bg-blue-600/20 text-blue-300 border border-blue-600/30'
-                  : isPast ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                  : 'text-slate-600 hover:bg-slate-800 hover:text-slate-400'
+                  isPast && !isCurrent ? 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                  : isCurrent ? '' : 'text-slate-600 hover:bg-slate-800/50 hover:text-slate-400'
                 }`}
+                style={isCurrent ? {
+                  background: `${theme.accent}18`,
+                  color: theme.accent,
+                  border: `1px solid ${theme.accent}35`,
+                  borderRadius: '8px',
+                } : undefined}
               >
                 <span className="mt-0.5 flex-shrink-0 font-mono text-xs w-4">
                   {isCurrent ? '▷' : stageStars[s.id] ? '✓' : isPast ? '✓' : `${i + 1}`}
@@ -233,15 +319,15 @@ export default function StagePage() {
       </div>
       {/* XP mini bar */}
       {isSupabaseConfigured() && (
-        <div className="p-3 border-t border-slate-800">
+        <div className="p-3 border-t" style={{ borderColor: theme.sidebarBorderColor }}>
           <div className="flex items-center justify-between mb-1">
             <span className="text-[9px] text-slate-600 uppercase tracking-wider">Lv.{userLevel}</span>
             <span className="text-[9px] text-slate-500">{xpInLevel}/{XP_PER_LEVEL} XP</span>
           </div>
           <div className="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-700"
-              style={{ width: `${xpPercent}%` }}
+              className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${xpPercent}%`, background: `linear-gradient(to right, ${theme.accent}cc, ${theme.accent})` }}
             />
           </div>
         </div>
@@ -253,8 +339,37 @@ export default function StagePage() {
   if (stage.type === 'pipeline' && stage.pipelineConfig) {
     const { layers, requiredConnections } = stage.pipelineConfig;
     return (
-      <div className={`flex flex-col h-screen ${theme.bg} text-white overflow-hidden transition-colors duration-700 relative`}>
-        {/* Damage flash overlay */}
+      <div className="flex flex-col h-screen text-white overflow-hidden relative" style={{ background: theme.bgStyle }}>
+        {/* World atmosphere layer */}
+        <WorldAtmosphere worldType={theme.particleType} />
+        {/* Daily mission completion toast */}
+        <MissionToast />
+        {/* Emergency event modal */}
+        {activeEvent && (
+          <EmergencyEventModal
+            event={activeEvent}
+            accent={theme.accent}
+            onClose={(xp) => {
+              setActiveEvent(null);
+              if (xp > 0) setUserXp(prev => prev + xp);
+            }}
+          />
+        )}
+        {/* World entry animation */}
+        {worldEntering && (
+          <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none" style={{ background: `radial-gradient(ellipse at center, ${theme.accent}18 0%, #000 65%)`, animation: 'world-enter-bg 2.0s ease-out forwards' }} onAnimationEnd={() => setWorldEntering(false)}>
+            <div style={{ textAlign: 'center', animation: 'world-enter-content 2.0s ease-out forwards' }}>
+              <div className="text-[80px] leading-none mb-5" style={{ filter: `drop-shadow(0 0 24px ${theme.accent}) drop-shadow(0 0 48px ${theme.accent}60)` }}>
+                {theme.worldEmoji}
+              </div>
+              <div className="text-5xl font-black mb-3 tracking-tight" style={{ color: theme.accent, textShadow: `0 0 32px ${theme.accent}90, 0 0 64px ${theme.accent}40` }}>
+                {theme.worldName}
+              </div>
+              <div className="text-slate-400 text-sm tracking-[0.2em] uppercase">{theme.layerDesc}</div>
+            </div>
+          </div>
+        )}
+        {/* High-z overlays */}
         {damageFlash && (
           <div className="absolute inset-0 z-50 pointer-events-none bg-red-500/20 animate-pulse" />
         )}
@@ -269,59 +384,66 @@ export default function StagePage() {
             onNext={handleNext}
           />
         )}
-        <header className={`flex items-center gap-3 px-5 py-3 border-b ${theme.border} flex-shrink-0`}>
-          <Link href={`/quest/${questId}`} className="text-slate-500 hover:text-white text-sm transition-colors">
-            ← {quest.clientName}
-          </Link>
-          <span className="text-slate-700">/</span>
-          <span className="text-slate-300 text-sm font-medium">{stage.title}</span>
-          <div className="ml-auto flex items-center gap-3">
-            <HpHearts />
-            {isSupabaseConfigured() && (
-              <div className="flex items-center gap-2">
-                <div className="w-16 h-1 rounded-full bg-slate-800 overflow-hidden">
-                  <div className="h-full rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${xpPercent}%` }} />
-                </div>
-                <span className="text-[10px] text-slate-500">{userXp} XP</span>
-                <div className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-600/20 border border-blue-600/30 text-blue-400 font-bold text-[10px]">
-                  {userLevel}
-                </div>
-              </div>
-            )}
-          </div>
-        </header>
-        <WorldProgressBar currentStageId={stageId} stageStars={stageStars} characterConfig={characterConfig} />
-        <div className="flex flex-1 overflow-hidden">
-          <StageSidebar />
-          {/* Center: mission */}
-          <div className="w-72 border-r border-slate-800 overflow-y-auto flex-shrink-0">
-            <div className="p-5 space-y-4">
-              <div className="px-4 py-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                <p className="text-xs text-blue-400 uppercase tracking-wider mb-1 font-medium">今日学ぶ概念</p>
-                <p className="text-white text-sm font-medium leading-relaxed">{stage.conceptTaught}</p>
-              </div>
-              {stage.storyMessage && (
-                <div className="px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700">
-                  <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{stage.storyMessage}</p>
+        {/* Content: z-10 to sit above atmosphere */}
+        <div className="relative z-10 flex flex-col flex-1 overflow-hidden">
+          <header className={`flex items-center gap-3 px-5 py-3 border-b ${theme.border} flex-shrink-0`} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)' }}>
+            <Link href={`/quest/${questId}`} className="text-slate-500 hover:text-white text-sm transition-colors">
+              ← {quest.clientName}
+            </Link>
+            <span className="text-slate-700">/</span>
+            <span className="text-slate-300 text-sm font-medium">{stage.title}</span>
+            {/* World badge */}
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1" style={{ background: `${theme.accent}18`, color: theme.accent, border: `1px solid ${theme.accent}35` }}>
+              {theme.worldEmoji} {theme.worldName}
+            </span>
+            <div className="ml-auto flex items-center gap-3">
+              <HpHearts />
+              {isSupabaseConfigured() && (
+                <div className="flex items-center gap-2">
+                  <div className="w-16 h-1 rounded-full bg-slate-800 overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${xpPercent}%`, background: theme.accent }} />
+                  </div>
+                  <span className="text-[10px] text-slate-500">{userXp} XP</span>
+                  <div className="flex items-center justify-center w-6 h-6 rounded-md font-bold text-[10px]" style={{ background: `${theme.accent}20`, border: `1px solid ${theme.accent}40`, color: theme.accent }}>
+                    {userLevel}
+                  </div>
                 </div>
               )}
-              <div className="px-4 py-3 rounded-xl border border-slate-700">
-                <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 font-medium">ミッション</p>
-                <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{stage.missionText}</p>
-              </div>
-              <div className="px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <p className="text-xs text-amber-500 mb-1 font-medium">ヒント</p>
-                <p className="text-amber-300/90 text-xs leading-relaxed">{stage.hintText}</p>
+            </div>
+          </header>
+          <WorldProgressBar currentStageId={stageId} stageStars={stageStars} characterConfig={characterConfig} />
+          <div className="flex flex-1 overflow-hidden">
+            <StageSidebar />
+            {/* Center: mission */}
+            <div className="w-72 overflow-y-auto flex-shrink-0 border-r" style={{ borderColor: theme.sidebarBorderColor, background: 'rgba(0,0,0,0.3)' }}>
+              <div className="p-5 space-y-4">
+                <div className="px-4 py-3 rounded-xl border" style={{ background: `${theme.accent}10`, borderColor: `${theme.accent}25` }}>
+                  <p className="text-xs uppercase tracking-wider mb-1 font-medium" style={{ color: theme.accent }}>今日学ぶ概念</p>
+                  <p className="text-white text-sm font-medium leading-relaxed">{stage.conceptTaught}</p>
+                </div>
+                {stage.storyMessage && (
+                  <div className="px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/60">
+                    <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{stage.storyMessage}</p>
+                  </div>
+                )}
+                <div className="px-4 py-3 rounded-xl border border-slate-700/60 bg-slate-900/40">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-2 font-medium">ミッション</p>
+                  <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{stage.missionText}</p>
+                </div>
+                <div className="px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <p className="text-xs text-amber-500 mb-1 font-medium">ヒント</p>
+                  <p className="text-amber-300/90 text-xs leading-relaxed">{stage.hintText}</p>
+                </div>
               </div>
             </div>
-          </div>
-          {/* Right: pipeline canvas */}
-          <div className="flex-1 overflow-hidden">
-            <QuestPipelineDesigner
-              layers={layers}
-              requiredConnections={requiredConnections}
-              onComplete={() => handleCompletion('', 2)}
-            />
+            {/* Right: pipeline canvas */}
+            <div className="flex-1 overflow-hidden">
+              <QuestPipelineDesigner
+                layers={layers}
+                requiredConnections={requiredConnections}
+                onComplete={() => handleCompletion('', 2)}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -332,8 +454,37 @@ export default function StagePage() {
   const guiOnComplete = async () => { await handleCompletion('', 2); };
 
   return (
-    <div className={`flex flex-col h-screen ${theme.bg} text-white overflow-hidden transition-colors duration-700 relative`}>
-      {/* Damage flash overlay */}
+    <div className="flex flex-col h-screen text-white overflow-hidden relative" style={{ background: theme.bgStyle }}>
+      {/* World atmosphere layer */}
+      <WorldAtmosphere worldType={theme.particleType} />
+      {/* Daily mission completion toast */}
+      <MissionToast />
+      {/* Emergency event modal */}
+      {activeEvent && (
+        <EmergencyEventModal
+          event={activeEvent}
+          accent={theme.accent}
+          onClose={(xp) => {
+            setActiveEvent(null);
+            if (xp > 0) setUserXp(prev => prev + xp);
+          }}
+        />
+      )}
+      {/* World entry animation */}
+      {worldEntering && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none" style={{ background: `radial-gradient(ellipse at center, ${theme.accent}18 0%, #000 65%)`, animation: 'world-enter-bg 2.0s ease-out forwards' }} onAnimationEnd={() => setWorldEntering(false)}>
+          <div style={{ textAlign: 'center', animation: 'world-enter-content 2.0s ease-out forwards' }}>
+            <div className="text-[80px] leading-none mb-5" style={{ filter: `drop-shadow(0 0 24px ${theme.accent}) drop-shadow(0 0 48px ${theme.accent}60)` }}>
+              {theme.worldEmoji}
+            </div>
+            <div className="text-5xl font-black mb-3 tracking-tight" style={{ color: theme.accent, textShadow: `0 0 32px ${theme.accent}90, 0 0 64px ${theme.accent}40` }}>
+              {theme.worldName}
+            </div>
+            <div className="text-slate-400 text-sm tracking-[0.2em] uppercase">{theme.layerDesc}</div>
+          </div>
+        </div>
+      )}
+      {/* High-z overlays */}
       {damageFlash && (
         <div className="absolute inset-0 z-50 pointer-events-none bg-red-500/20 animate-pulse" />
       )}
@@ -349,56 +500,63 @@ export default function StagePage() {
         />
       )}
 
-      {/* Header */}
-      <header className={`flex items-center gap-3 px-5 py-3 border-b ${theme.border} flex-shrink-0`}>
-        <Link href={`/quest/${questId}`} className="text-slate-500 hover:text-white text-sm transition-colors">
-          ← {quest.clientName}
-        </Link>
-        <span className="text-slate-700">/</span>
-        <span className="text-slate-300 text-sm font-medium">{stage.title}</span>
-        {!dbReady && (
-          <span className="text-xs text-slate-600 flex items-center gap-1">
-            <span className="animate-spin inline-block">⟳</span>
-            DuckDB 初期化中...
+      {/* Content: z-10 to sit above atmosphere */}
+      <div className="relative z-10 flex flex-col flex-1 overflow-hidden">
+        {/* Header */}
+        <header className={`flex items-center gap-3 px-5 py-3 border-b ${theme.border} flex-shrink-0`} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)' }}>
+          <Link href={`/quest/${questId}`} className="text-slate-500 hover:text-white text-sm transition-colors">
+            ← {quest.clientName}
+          </Link>
+          <span className="text-slate-700">/</span>
+          <span className="text-slate-300 text-sm font-medium">{stage.title}</span>
+          {/* World badge */}
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1" style={{ background: `${theme.accent}18`, color: theme.accent, border: `1px solid ${theme.accent}35` }}>
+            {theme.worldEmoji} {theme.worldName}
           </span>
-        )}
-        <div className="ml-auto flex items-center gap-3">
-          <HpHearts />
-          {isSupabaseConfigured() && (
-            <div className="flex items-center gap-2">
-              <div className="w-16 h-1 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${xpPercent}%` }} />
-              </div>
-              <span className="text-[10px] text-slate-500">{userXp} XP</span>
-              <div className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-600/20 border border-blue-600/30 text-blue-400 font-bold text-[10px]">
-                {userLevel}
-              </div>
-            </div>
+          {!dbReady && (
+            <span className="text-xs text-slate-600 flex items-center gap-1">
+              <span className="animate-spin inline-block">⟳</span>
+              DuckDB 初期化中...
+            </span>
           )}
-        </div>
-      </header>
-      <WorldProgressBar currentStageId={stageId} stageStars={stageStars} />
+          <div className="ml-auto flex items-center gap-3">
+            <HpHearts />
+            {isSupabaseConfigured() && (
+              <div className="flex items-center gap-2">
+                <div className="w-16 h-1 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${xpPercent}%`, background: theme.accent }} />
+                </div>
+                <span className="text-[10px] text-slate-500">{userXp} XP</span>
+                <div className="flex items-center justify-center w-6 h-6 rounded-md font-bold text-[10px]" style={{ background: `${theme.accent}20`, border: `1px solid ${theme.accent}40`, color: theme.accent }}>
+                  {userLevel}
+                </div>
+              </div>
+            )}
+          </div>
+        </header>
+        <WorldProgressBar currentStageId={stageId} stageStars={stageStars} />
 
-      <div className="flex flex-1 overflow-hidden">
-        <StageSidebar />
+        <div className="flex flex-1 overflow-hidden">
+          <StageSidebar />
 
-        {/* Right: GUI stage content */}
-        <div className="flex-1 overflow-hidden">
-          {questId === 'saas' ? (
-            <>
-              {stageId === 'source' && <SaasSourceStage quest={quest} dbReady={dbReady} onComplete={guiOnComplete} />}
-              {stageId === 'staging' && <SaasStagingStage dbReady={dbReady} onComplete={guiOnComplete} />}
-              {stageId === 'warehouse' && <SaasWarehouseStage dbReady={dbReady} onComplete={guiOnComplete} />}
-              {stageId === 'mart' && <SaasMartStage dbReady={dbReady} onComplete={guiOnComplete} />}
-            </>
-          ) : (
-            <>
-              {stageId === 'source' && <SourceStage quest={quest} dbReady={dbReady} onComplete={guiOnComplete} />}
-              {stageId === 'staging' && <StagingStage dbReady={dbReady} onComplete={guiOnComplete} />}
-              {stageId === 'warehouse' && <WarehouseStage dbReady={dbReady} onComplete={guiOnComplete} />}
-              {stageId === 'mart' && <MartStage dbReady={dbReady} onComplete={guiOnComplete} />}
-            </>
-          )}
+          {/* Right: GUI stage content */}
+          <div className="flex-1 overflow-hidden">
+            {questId === 'saas' ? (
+              <>
+                {stageId === 'source' && <SaasSourceStage quest={quest} dbReady={dbReady} onComplete={guiOnComplete} />}
+                {stageId === 'staging' && <SaasStagingStage dbReady={dbReady} onComplete={guiOnComplete} />}
+                {stageId === 'warehouse' && <SaasWarehouseStage dbReady={dbReady} onComplete={guiOnComplete} />}
+                {stageId === 'mart' && <SaasMartStage dbReady={dbReady} onComplete={guiOnComplete} />}
+              </>
+            ) : (
+              <>
+                {stageId === 'source' && <SourceStage quest={quest} dbReady={dbReady} onComplete={guiOnComplete} />}
+                {stageId === 'staging' && <StagingStage dbReady={dbReady} onComplete={guiOnComplete} />}
+                {stageId === 'warehouse' && <WarehouseStage dbReady={dbReady} onComplete={guiOnComplete} />}
+                {stageId === 'mart' && <MartStage dbReady={dbReady} onComplete={guiOnComplete} />}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

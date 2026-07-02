@@ -129,3 +129,121 @@ body {
 .animate-dialog-in {
   animation: dialog-in 0.25s ease-out forwards;
 }
+
+/* ── World Stage Atmosphere ── */
+
+/* Cave (Source): water drops falling from stalactites */
+@keyframes cave-drip {
+  0%   { transform: translateY(0px); opacity: 0; }
+  8%   { opacity: 0.9; }
+  88%  { opacity: 0.6; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* Grassland (Staging): leaves floating upward */
+@keyframes leaf-float {
+  0%   { transform: translateY(30px) translateX(0) rotate(0deg); opacity: 0; }
+  8%   { opacity: 0.85; }
+  92%  { opacity: 0.55; }
+  100% { transform: translateY(-110vh) translateX(var(--drift, 40px)) rotate(var(--spin, 360deg)); opacity: 0; }
+}
+
+/* Volcano (Warehouse): embers rising from lava */
+@keyframes ember-rise {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 1; }
+  60%  { opacity: 0.7; }
+  100% { transform: translateY(-100vh) translateX(var(--drift, 20px)) scale(0.1); opacity: 0; }
+}
+
+/* Castle (Mart): gold sparkles appearing */
+@keyframes sparkle-appear {
+  0%   { transform: scale(0) rotate(0deg);    opacity: 0; }
+  30%  { transform: scale(1.3) rotate(45deg); opacity: 1; }
+  70%  { transform: scale(0.9) rotate(90deg); opacity: 0.7; }
+  100% { transform: scale(0) rotate(180deg);  opacity: 0; }
+}
+
+/* Ambient breathing glow */
+@keyframes ambient-breathe {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 1; }
+}
+
+/* Crystal pulsing glow */
+@keyframes crystal-glow {
+  0%, 100% { opacity: 0.5; filter: brightness(1); }
+  50%       { opacity: 1;   filter: brightness(1.7) saturate(1.4); }
+}
+
+/* Flame dancing */
+@keyframes flame-dance {
+  0%   { transform: scaleX(1)    scaleY(1)    skewX(0deg); }
+  20%  { transform: scaleX(0.82) scaleY(1.18) skewX(-5deg); }
+  45%  { transform: scaleX(1.12) scaleY(0.88) skewX(4deg); }
+  70%  { transform: scaleX(0.88) scaleY(1.12) skewX(-3deg); }
+  100% { transform: scaleX(1)    scaleY(1)    skewX(0deg); }
+}
+
+/* Grass blade swaying */
+@keyframes grass-sway {
+  0%, 100% { transform: rotate(0deg); }
+  33%       { transform: rotate(7deg); }
+  66%       { transform: rotate(-5deg); }
+}
+
+/* World entry: background */
+@keyframes world-enter-bg {
+  0%   { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* World entry: content */
+@keyframes world-enter-content {
+  0%   { opacity: 0; transform: scale(0.78) translateY(28px); }
+  18%  { opacity: 1; transform: scale(1) translateY(0); }
+  72%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+
+/* ── Emergency Event Modal ── */
+
+@keyframes event-appear {
+  0%   { transform: translateX(110%) translateY(-50%) scale(0.9); opacity: 0; }
+  65%  { transform: translateX(-3%) translateY(-50%) scale(1.01); opacity: 1; }
+  100% { transform: translateX(0%) translateY(-50%) scale(1); opacity: 1; }
+}
+
+@keyframes event-border-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.2), 0 24px 80px rgba(0,0,0,0.9); }
+  50%       { box-shadow: 0 0 0 3px rgba(239,68,68,0.1), 0 24px 80px rgba(0,0,0,0.9); }
+}
+
+@keyframes urgent-blink {
+  0%, 49% { opacity: 1; color: #FCA5A5; }
+  50%, 100% { opacity: 0.3; color: #7f1d1d; }
+}
+
+@keyframes dot-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50%       { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ── Daily Mission & Streak ── */
+
+@keyframes mission-appear {
+  0%   { transform: translateY(12px) scale(0.94); opacity: 0; }
+  100% { transform: translateY(0) scale(1);       opacity: 1; }
+}
+
+@keyframes streak-flame {
+  0%, 100% { transform: scale(1) rotate(-5deg); }
+  50%       { transform: scale(1.25) rotate(5deg); }
+}
+
+@keyframes mission-complete {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); }
+  70%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}

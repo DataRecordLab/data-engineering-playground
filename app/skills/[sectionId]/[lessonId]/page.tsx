@@ -8,6 +8,7 @@ import { LessonPlayer } from '@/components/skills/LessonPlayer';
 import { GameOverOverlay } from '@/components/stage/GameOverOverlay';
 import { useGameStore } from '@/lib/store/gameStore';
 import { saveSkillProgress } from '@/lib/supabase/progress';
+import { completeDailyMission } from '@/lib/daily/missions';
 
 type Phase = 'play' | 'complete';
 
@@ -61,6 +62,7 @@ export default function LessonPage() {
     const total = result?.lesson.questions.length ?? 1;
     const stars = correct >= total ? 3 : correct >= Math.ceil(total * 0.7) ? 2 : 1;
     await saveSkillProgress({ sectionId, lessonId, xpEarned: xp, stars });
+    completeDailyMission('skill_lesson');
     setPhase('complete');
   }
 
