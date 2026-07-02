@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sprite } from '@/components/characters/Sprite';
 import { buildPlayerSprite } from '@/components/characters/sprites/playerCustom';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+import { useGameStore } from '@/lib/store/gameStore';
 import {
   DEFAULT_CHARACTER_CONFIG,
   PRESET_CHARACTERS,
@@ -83,10 +84,44 @@ export default function OnboardingPage() {
   const [jobTitle, setJobTitle] = useState<JobTitle>('Data Engineer');
   const [config, setConfig] = useState<CharacterConfig>(DEFAULT_CHARACTER_CONFIG);
   const [saving, setSaving] = useState(false);
-  // For now always treat as free plan (pro check will come from Supabase)
   const isPro = false;
 
+  const { setCharacterConfig } = useGameStore();
   const sprite = useMemo(() => buildPlayerSprite(config), [config]);
+
+  // 既存の保存済みキャラクター設定を読み込む
+  useEffect(() => {
+    async function loadSaved() {
+      if (isSupabaseConfigured()) {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from('users')
+          .select('display_name, character_config')
+          .eq('id', user.id)
+          .single();
+        if (data) {
+          if (data.display_name) setDisplayName(data.display_name);
+          if (data.character_config) {
+            const saved = data.character_config as CharacterConfig;
+            setConfig(saved);
+            if (saved.jobTitle) setJobTitle(saved.jobTitle);
+          }
+        }
+      } else {
+        const saved = localStorage.getItem('dc_character');
+        if (saved) {
+          const parsed = JSON.parse(saved) as CharacterConfig & { displayName?: string };
+          if (parsed.displayName) setDisplayName(parsed.displayName);
+          setConfig(parsed);
+          if (parsed.jobTitle) setJobTitle(parsed.jobTitle);
+        }
+      }
+    }
+    loadSaved();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function patch(partial: Partial<CharacterConfig>) {
     setConfig(prev => ({ ...prev, ...partial }));
@@ -98,7 +133,8 @@ export default function OnboardingPage() {
 
   async function handleSave() {
     setSaving(true);
-    const characterData = { ...config, jobTitle, displayName: displayName.trim() || 'Engineer' };
+    const finalConfig: CharacterConfig = { ...config, jobTitle };
+    const characterData = { ...finalConfig, displayName: displayName.trim() || 'Engineer' };
 
     if (isSupabaseConfigured()) {
       const supabase = createClient();
@@ -107,7 +143,7 @@ export default function OnboardingPage() {
         await supabase.from('users').upsert({
           id: user.id,
           display_name: characterData.displayName,
-          character_config: { ...config, jobTitle },
+          character_config: finalConfig,
           onboarding_done: true,
           plan: 'free',
           level: 1,
@@ -115,10 +151,11 @@ export default function OnboardingPage() {
         });
       }
     } else {
-      // Dev mode: persist to localStorage
       localStorage.setItem('dc_character', JSON.stringify(characterData));
     }
 
+    // gameStore を即座に更新してダッシュボードのキャラに反映
+    setCharacterConfig(finalConfig);
     router.push('/dashboard');
   }
 
