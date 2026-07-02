@@ -25,7 +25,7 @@ function buildDialogLines(questId: string): DialogLine[] {
         expression: 'worried',
         name: '田村 誠',
         role: 'ShopNow CEO',
-        text: 'DataCraft Agencyさん、緊急のお願いがあります。先月から売上の集計が全くできていない状態です。',
+        text: 'Modelion Agencyさん、緊急のお願いがあります。先月から売上の集計が全くできていない状態です。',
         side: 'left',
       },
       {

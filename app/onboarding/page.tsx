@@ -132,7 +132,7 @@ export default function OnboardingPage() {
       <header className="flex items-center justify-between px-8 py-4 border-b border-slate-800">
         <div className="flex items-center gap-2">
           <span className="text-blue-400 text-xl font-bold">◈</span>
-          <span className="font-bold tracking-tight">DataCraft</span>
+          <span className="font-bold tracking-tight">Modelion</span>
         </div>
         <span className="text-slate-600 text-xs">キャラクター作成</span>
       </header>
@@ -144,7 +144,7 @@ export default function OnboardingPage() {
           <div>
             <p className="text-slate-400 text-xs mb-1">田中 貢 — Senior Data Engineer</p>
             <p className="text-white text-sm leading-relaxed">
-              「DataCraft Agencyへようこそ。まずあなた自身を教えてくれ。名前と外見を設定したら入社できる。」
+              「Modelion Agencyへようこそ。まずあなた自身を教えてくれ。名前と外見を設定したら入社できる。」
             </p>
           </div>
         </div>
@@ -322,7 +322,7 @@ export default function OnboardingPage() {
               disabled={saving}
               className="px-8 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold text-sm transition-colors"
             >
-              {saving ? '保存中...' : 'DataCraft Agencyに入社する →'}
+              {saving ? '保存中...' : 'Modelion Agencyに入社する →'}
             </button>
           </div>
         </div>

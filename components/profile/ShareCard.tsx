@@ -73,7 +73,7 @@ export function ShareCard({
         {/* ユーザー情報 */}
         <div className="flex-1 min-w-0">
           <p className="text-white font-black text-base leading-tight truncate">
-            {displayName || 'DataCraft Engineer'}
+            {displayName || 'Modelion Engineer'}
           </p>
           <p className="text-indigo-400 text-[10px] font-medium mt-0.5">
             {jobTitle || config.jobTitle}
@@ -123,7 +123,7 @@ export function ShareCard({
       >
         <div className="flex items-center gap-1.5">
           <span className="text-indigo-400 text-xs font-black">◈</span>
-          <span className="text-slate-500 text-[10px] font-medium">DataCraft Agency</span>
+          <span className="text-slate-500 text-[10px] font-medium">Modelion Agency</span>
         </div>
         <span className="text-slate-700 text-[9px] font-mono">datacraft.app</span>
       </div>

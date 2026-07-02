@@ -193,7 +193,7 @@ export function WorldMap() {
           />
         ))}
 
-        {/* DataCraft HQ */}
+        {/* Modelion HQ */}
         <HQBuilding cx={HQ.cx} cy={HQ.cy} />
 
         {/* Player character */}
@@ -406,7 +406,7 @@ function HQBuilding({ cx, cy }: { cx: number; cy: number }) {
         fontWeight="bold"
         fontFamily="monospace"
       >
-        ◈ DataCraft HQ
+        ◈ Modelion HQ
       </text>
       {/* Entrance */}
       <rect x={-10} y={-12} width={20} height={12} fill={c} opacity="0.2" />

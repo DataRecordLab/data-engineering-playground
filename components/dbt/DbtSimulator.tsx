@@ -264,7 +264,7 @@ export function DbtSimulator() {
     const sourceCount = project.sources.reduce((s, src) => s + src.tables.length, 0);
     const testCount = project.tests.length;
 
-    addLog(`Running with dbt-duckdb=1.8.0 (DataCraft Simulator)`, 'info');
+    addLog(`Running with dbt-duckdb=1.8.0 (Modelion Simulator)`, 'info');
     addLog(`Found ${totalCount} models, ${testCount} tests, ${sourceCount} sources`, 'info');
     addLog('', 'info');
     addLog(`Concurrency: 1 threads (target='dev')`, 'info');

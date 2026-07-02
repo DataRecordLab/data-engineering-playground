@@ -40,7 +40,7 @@ export default async function PublicProfilePage({ params }: Props) {
           <p className="text-4xl">👤</p>
           <p className="text-slate-400">プロフィールが見つかりません</p>
           <Link href="/" className="text-indigo-400 hover:text-indigo-300 text-sm">
-            DataCraft トップへ →
+            Modelion トップへ →
           </Link>
         </div>
       </div>
@@ -56,7 +56,7 @@ export default async function PublicProfilePage({ params }: Props) {
   const lessonsCompleted = skillProgress.length;
   const skillDimensions = calculateSkillScores(skillProgress, questProgress);
 
-  const displayName = profile.display_name ?? 'DataCraft Engineer';
+  const displayName = profile.display_name ?? 'Modelion Engineer';
   const characterConfig = profile.character_config as CharacterConfig | null;
 
   return (
@@ -65,7 +65,7 @@ export default async function PublicProfilePage({ params }: Props) {
       <header className="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-950/80">
         <div className="flex items-center gap-2">
           <span className="text-indigo-400 font-black text-lg">◈</span>
-          <span className="font-black">DataCraft</span>
+          <span className="font-black">Modelion</span>
           <span className="text-slate-600 text-sm">Agency</span>
         </div>
         <Link
@@ -80,7 +80,7 @@ export default async function PublicProfilePage({ params }: Props) {
 
         {/* タイトル */}
         <div className="text-center space-y-2">
-          <p className="text-slate-500 text-sm">DataCraft Agency のスキルカード</p>
+          <p className="text-slate-500 text-sm">Modelion Agency のスキルカード</p>
           <h1 className="text-2xl font-black">{displayName} さんのプロフィール</h1>
         </div>
 
@@ -132,7 +132,7 @@ export default async function PublicProfilePage({ params }: Props) {
             href="/signup"
             className="block w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-indigo-500/25"
           >
-            ▶ 無料で DataCraft を始める
+            ▶ 無料で Modelion を始める
           </Link>
         </div>
       </div>

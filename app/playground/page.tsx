@@ -212,7 +212,7 @@ export default function PlaygroundPage() {
           </Link>
           <span className="text-slate-800">/</span>
           <span className="font-black text-sm text-white">
-            <span className="text-indigo-400">◈</span> DataCraft | 無料体験
+            <span className="text-indigo-400">◈</span> Modelion | 無料体験
           </span>
           <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold">
             TRIAL

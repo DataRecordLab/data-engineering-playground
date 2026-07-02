@@ -189,7 +189,7 @@ export default function Page() {
           >
             ◈
           </span>
-          <span className="font-black text-lg tracking-tight">DataCraft</span>
+          <span className="font-black text-lg tracking-tight">Modelion</span>
           <span className="text-slate-600 text-xs font-medium ml-1">Agency</span>
         </div>
         <nav className="flex items-center gap-3">
@@ -267,7 +267,7 @@ export default function Page() {
               href="/signup"
               className="flex items-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm transition-all hover:scale-105 hover:shadow-xl hover:shadow-indigo-500/30"
             >
-              ▶ DataCraft Agencyに入社する
+              ▶ Modelion Agencyに入社する
             </Link>
             <Link
               href="/playground"
@@ -368,21 +368,21 @@ export default function Page() {
             準備はできましたか？
           </h2>
           <p className="text-slate-400 text-sm mb-8 leading-relaxed">
-            DataCraft Agencyで、<br />
+            Modelion Agencyで、<br />
             データエンジニアリングのクエストを受注しよう。
           </p>
           <Link
             href="/signup"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-base transition-all hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/30"
           >
-            ▶ DataCraft Agencyに入社する
+            ▶ Modelion Agencyに入社する
           </Link>
           <p className="text-slate-700 text-xs mt-4">無料で始められます</p>
         </div>
       </section>
 
       <footer className="relative z-10 text-center py-6 text-slate-700 text-xs border-t border-slate-900">
-        DataCraft — データを設計して、体験する。
+        Modelion — データを設計して、体験する。
       </footer>
     </div>
   );

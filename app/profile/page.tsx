@@ -129,7 +129,7 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-2 gap-3">
               <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`DataCraftでデータエンジニアリングを学んでいます！\n\n#DataCraft #データエンジニアリング\n${window.location.origin}/profile/${userId}`)}`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Modelionでデータエンジニアリングを学んでいます！\n\n#Modelion #データエンジニアリング\n${window.location.origin}/profile/${userId}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="py-3 rounded-xl border border-slate-700 hover:border-sky-500/50 text-slate-400 hover:text-sky-400 text-sm text-center font-bold transition-colors"

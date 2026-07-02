@@ -53,9 +53,9 @@ export default function SignupPage() {
         <div className="text-center mb-10">
           <Link href="/" className="inline-flex items-center gap-2">
             <span className="text-blue-400 text-2xl font-bold">◈</span>
-            <span className="text-white font-bold text-xl tracking-tight">DataCraft</span>
+            <span className="text-white font-bold text-xl tracking-tight">Modelion</span>
           </Link>
-          <p className="text-slate-500 text-sm mt-3">DataCraft Agencyに入社する</p>
+          <p className="text-slate-500 text-sm mt-3">Modelion Agencyに入社する</p>
         </div>
 
         {/* Card */}

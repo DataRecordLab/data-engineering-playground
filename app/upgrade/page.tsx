@@ -47,7 +47,7 @@ export default function UpgradePage() {
       <header className="flex items-center justify-between px-8 py-4 border-b border-slate-800">
         <Link href="/dashboard" className="flex items-center gap-2">
           <span className="text-blue-400 text-xl font-bold">◈</span>
-          <span className="font-bold tracking-tight">DataCraft</span>
+          <span className="font-bold tracking-tight">Modelion</span>
         </Link>
         <Link href="/dashboard" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">
           ← ダッシュボードへ戻る
@@ -59,7 +59,7 @@ export default function UpgradePage() {
           {/* Badge */}
           <div className="flex justify-center mb-6">
             <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-medium">
-              ✦ DataCraft Pro
+              ✦ Modelion Pro
             </span>
           </div>
 

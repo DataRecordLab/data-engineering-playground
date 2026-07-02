@@ -161,7 +161,7 @@ export default async function DashboardPage() {
       <header className="flex items-center justify-between px-6 py-3 border-b border-slate-800/60 flex-shrink-0 bg-slate-950/80 backdrop-blur">
         <div className="flex items-center gap-2">
           <span className="text-blue-400 font-bold text-lg">◈</span>
-          <span className="font-bold tracking-tight">DataCraft</span>
+          <span className="font-bold tracking-tight">Modelion</span>
           <span className="text-slate-600 text-sm">Agency</span>
         </div>
 

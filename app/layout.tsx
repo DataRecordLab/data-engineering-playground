@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DataCraft — Data Engineering Playground",
+  title: "Modelion — Data Engineering Playground",
   description: "データパイプラインを設計して体験する学習プラットフォーム",
 };
 
