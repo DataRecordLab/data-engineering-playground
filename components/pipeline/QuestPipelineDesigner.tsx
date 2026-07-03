@@ -594,6 +594,19 @@ function CanvasPhase({ layers, pattern, onComplete }: {
   }
 
   function handleFinalComplete() {
+    // 設計内容をlocalStorageに保存（DAGラボ連携・ゲスト対応）
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('quest_pipeline_design_ec-site', JSON.stringify({
+          patternId:   pattern.id,
+          patternName: pattern.name,
+          subtitle:    pattern.subtitle,
+          layers:      pattern.layers,
+          color:       pattern.color,
+          pros:        pattern.pros,
+        }));
+      } catch { /* ignore */ }
+    }
     setShowFinalReflection(false);
     setValidated(true);
     setTimeout(onComplete, 800);

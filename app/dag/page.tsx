@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { DagLab } from '@/components/dag/DagLab';
+import { DagLab, type PipelineDesignRecap } from '@/components/dag/DagLab';
 import { LabGuidePanel, type GuideStep } from '@/components/labs/LabGuidePanel';
 import { ProGate } from '@/components/labs/ProGate';
 import type { DagScenario } from '@/lib/dag';
@@ -44,6 +44,7 @@ export default function DagPage() {
   const [guideStep, setGuideStep] = useState(0);
   const [showProGate, setShowProGate] = useState(false);
   const [userScenarios, setUserScenarios] = useState<DagScenario[]>([]);
+  const [designRecap, setDesignRecap] = useState<PipelineDesignRecap | null>(null);
 
   useEffect(() => {
     fetch('/api/dag/my-pipelines')
@@ -55,6 +56,11 @@ export default function DagPage() {
           // ゲストはlocalStorageから進捗を読んでシナリオを構築
           loadGuestScenarios();
         }
+        // 設計サマリーはログイン済みでもlocalStorageから読む
+        try {
+          const recapRaw = localStorage.getItem('quest_pipeline_design_ec-site');
+          if (recapRaw) setDesignRecap(JSON.parse(recapRaw) as PipelineDesignRecap);
+        } catch { /* ignore */ }
       })
       .catch(() => loadGuestScenarios());
   }, []);
@@ -75,6 +81,15 @@ export default function DagPage() {
       } catch { /* ignore */ }
     }
     if (found.length > 0) setUserScenarios(found);
+
+    // パイプライン設計サマリーを読み込む
+    try {
+      const recapRaw = localStorage.getItem('quest_pipeline_design_ec-site');
+      if (recapRaw) {
+        const recap = JSON.parse(recapRaw) as PipelineDesignRecap;
+        setDesignRecap(recap);
+      }
+    } catch { /* ignore */ }
   }
 
   function handleDagRun(_scenarioId: string) {
@@ -117,6 +132,7 @@ export default function DagPage() {
         lockedScenarioIdx={[1]}
         onLockedClick={() => setShowProGate(true)}
         extraScenarios={userScenarios}
+        designRecap={designRecap}
       />
 
       <LabGuidePanel

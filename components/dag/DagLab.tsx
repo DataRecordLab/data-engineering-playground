@@ -104,6 +104,17 @@ function TaskNode({ data }: NodeProps) {
 
 const NODE_TYPES = { task: TaskNode };
 
+// ── パイプライン設計サマリー型 ─────────────────────────────────────────────────
+
+export interface PipelineDesignRecap {
+  patternId:   string;
+  patternName: string;
+  subtitle:    string;
+  layers:      string[];
+  color:       string;
+  pros:        string[];
+}
+
 // ── フェーズ型 ────────────────────────────────────────────────────────────────
 
 type RunPhase = 'precheck' | 'failure_decision' | 'running' | 'bottleneck' | 'done';
@@ -115,9 +126,10 @@ interface DagLabProps {
   lockedScenarioIdx?: number[];
   onLockedClick?: () => void;
   extraScenarios?: DagScenario[];
+  designRecap?: PipelineDesignRecap | null;
 }
 
-export function DagLab({ onDagRun, lockedScenarioIdx = [], onLockedClick, extraScenarios = [] }: DagLabProps = {}) {
+export function DagLab({ onDagRun, lockedScenarioIdx = [], onLockedClick, extraScenarios = [], designRecap }: DagLabProps = {}) {
   const allScenarios = [...DAG_SCENARIOS, ...extraScenarios];
 
   const [scenarioIdx, setScenarioIdx] = useState(0);
@@ -368,41 +380,74 @@ export function DagLab({ onDagRun, lockedScenarioIdx = [], onLockedClick, extraS
 
       {/* ユーザーパイプライン — 設計内容の説明パネル */}
       {scenario.isUserPipeline && phase === 'precheck' && (
-        <div className="px-6 py-3 border-b border-emerald-500/15 bg-emerald-950/20 flex items-center gap-6 flex-shrink-0">
-          <div className="flex-shrink-0">
-            <p className="text-[10px] text-emerald-400 font-bold mb-1.5 uppercase tracking-wider">あなたが設計したレイヤー</p>
-            <div className="flex items-center gap-1.5">
-              {[
-                { prefix: 'extract_', ...LAYER_META.extract },
-                { prefix: 'stg_',     ...LAYER_META.stg },
-                { prefix: 'fct_',     ...LAYER_META.fct },
-                { prefix: 'mart_',    ...LAYER_META.mart },
-              ].map((layer, i, arr) => {
-                const present = scenario.tasks.some(t => t.id.startsWith(layer.prefix));
-                return (
-                  <div key={layer.stage} className="flex items-center gap-1.5">
-                    <div
-                      className="flex items-center gap-1 px-2 py-1 rounded text-[9px] font-bold"
-                      style={{
-                        color: present ? layer.color : '#374151',
-                        background: present ? layer.color + '18' : '#0f172a',
-                        border: `1px solid ${present ? layer.color + '40' : '#1e293b'}`,
-                        opacity: present ? 1 : 0.4,
-                      }}
-                    >
-                      {present ? '✓' : '○'} {layer.label}
-                    </div>
-                    {i < arr.length - 1 && (
-                      <span className="text-slate-700 text-[10px]">→</span>
-                    )}
+        <div className="border-b border-emerald-500/15 bg-emerald-950/20 flex-shrink-0">
+          {/* 設計サマリー行 */}
+          <div className="px-6 py-3 flex items-start gap-8">
+            {/* パターン情報 */}
+            <div className="flex-shrink-0 min-w-[220px]">
+              <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mb-2">あなたが選んだアーキテクチャ</p>
+              {designRecap ? (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: designRecap.color }} />
+                    <span className="text-white text-xs font-bold">{designRecap.patternName}</span>
                   </div>
-                );
-              })}
+                  <p className="font-mono text-[10px] text-slate-500 mb-2">{designRecap.subtitle}</p>
+                  <div className="space-y-0.5">
+                    {designRecap.pros.slice(0, 2).map(pro => (
+                      <p key={pro} className="text-[9px] text-emerald-400/70">✓ {pro}</p>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-slate-500 text-[10px]">（設計情報なし — クエストのパイプラインステージを先に完了してください）</p>
+              )}
             </div>
-          </div>
-          <div className="text-[10px] text-slate-500 leading-relaxed border-l border-slate-800 pl-6">
-            <p className="text-slate-400 font-medium mb-0.5">各ノードの色バッジ = クエストで設計したステージです</p>
-            <p>ノードを辿って <span className="text-blue-400">Source</span> → <span className="text-emerald-400">Staging</span> → <span className="text-red-400">Warehouse</span> → <span className="text-purple-400">Mart</span> の流れを確認してみよう</p>
+
+            {/* レイヤーフロー */}
+            <div className="flex-shrink-0">
+              <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mb-2">設計したレイヤーとDAGの対応</p>
+              <div className="flex items-center gap-1.5">
+                {[
+                  { prefix: 'extract_', ...LAYER_META.extract, dagLabel: 'extract_* タスク' },
+                  { prefix: 'stg_',     ...LAYER_META.stg,     dagLabel: 'stg_* タスク' },
+                  { prefix: 'fct_',     ...LAYER_META.fct,     dagLabel: 'fct_* タスク' },
+                  { prefix: 'mart_',    ...LAYER_META.mart,    dagLabel: 'mart_* タスク' },
+                ].map((layer, i, arr) => {
+                  const present = scenario.tasks.some(t => t.id.startsWith(layer.prefix));
+                  return (
+                    <div key={layer.stage} className="flex items-center gap-1.5">
+                      <div className="flex flex-col items-center gap-1">
+                        <div
+                          className="flex items-center gap-1 px-2 py-1 rounded text-[9px] font-bold"
+                          style={{
+                            color: present ? layer.color : '#374151',
+                            background: present ? layer.color + '18' : '#0f172a',
+                            border: `1px solid ${present ? layer.color + '40' : '#1e293b'}`,
+                            opacity: present ? 1 : 0.35,
+                          }}
+                        >
+                          {present ? '✓' : '○'} {layer.label}
+                        </div>
+                        {present && (
+                          <p className="text-[8px] font-mono" style={{ color: layer.color + 'aa' }}>{layer.dagLabel}</p>
+                        )}
+                      </div>
+                      {i < arr.length - 1 && (
+                        <span className="text-slate-700 text-[10px] mb-4">→</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ヒント */}
+            <div className="flex-1 text-[10px] text-slate-500 leading-relaxed border-l border-slate-800 pl-6 self-center">
+              <p className="text-slate-400 font-medium mb-1">📌 DAGの見方</p>
+              <p>各タスクノードには <span className="font-bold" style={{ color: '#818cf8' }}>色バッジ</span> でレイヤーが表示されています。</p>
+              <p className="mt-1">ノードを辿るとあなたが設計したデータフローが<br />実際にどう実行されるか確認できます。</p>
+            </div>
           </div>
         </div>
       )}
