@@ -17,7 +17,8 @@ import { SaasSourceStage } from '@/components/stage/SaasSourceStage';
 import { SaasStagingStage } from '@/components/stage/SaasStagingStage';
 import { SaasWarehouseStage } from '@/components/stage/SaasWarehouseStage';
 import { SaasMartStage } from '@/components/stage/SaasMartStage';
-import { saveStageProgress, getUserProgress, getUserProfile } from '@/lib/supabase/progress';
+import { saveStageProgress, getUserProgress, getUserProfile, getSkillProgress } from '@/lib/supabase/progress';
+import { ALL_SECTIONS } from '@/lib/skills';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useGameStore } from '@/lib/store/gameStore';
 import type { QuestId, StageId, CharacterConfig } from '@/types';
@@ -144,6 +145,13 @@ const STAGE_THEMES: Record<string, WorldTheme> = {
 
 const XP_PER_LEVEL = 500;
 
+// クエストステージ → 関連スキルセクションのマッピング
+const STAGE_SKILL_MAP: Record<string, { sectionId: string; label: string; color: string }> = {
+  pipeline: { sectionId: 'pipeline-basics', label: 'パイプライン基礎', color: '#818CF8' },
+  staging:  { sectionId: 'data-quality',   label: 'データ品質',       color: '#34D399' },
+  warehouse:{ sectionId: 'data-modeling',  label: 'データモデリング',  color: '#F87171' },
+};
+
 interface CompletionData {
   stars: number;
   xpEarned: number;
@@ -185,6 +193,7 @@ export default function StagePage() {
   const [userLevel, setUserLevel] = useState(1);
   const [userXp, setUserXp] = useState(0);
   const [stageStars, setStageStars] = useState<Record<string, number>>({});
+  const [skillCountMap, setSkillCountMap] = useState<Record<string, number>>({});
 
   // Random emergency event (25-90s after entering stage, not during completion/gameover/intro)
   useEmergencyEvent({
@@ -199,7 +208,8 @@ export default function StagePage() {
     Promise.all([
       getUserProfile(),
       getUserProgress(questId),
-    ]).then(([profile, progress]) => {
+      getSkillProgress(),
+    ]).then(([profile, progress, skillRows]) => {
       if (profile) {
         setUserLevel(profile.level ?? 1);
         setUserXp(profile.total_xp ?? 0);
@@ -210,6 +220,11 @@ export default function StagePage() {
       const starsMap: Record<string, number> = {};
       progress.forEach(p => { starsMap[p.stage] = p.stars; });
       setStageStars(starsMap);
+      const countMap: Record<string, number> = {};
+      for (const row of skillRows) {
+        countMap[row.section_id] = (countMap[row.section_id] ?? 0) + 1;
+      }
+      setSkillCountMap(countMap);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questId]);
@@ -367,6 +382,36 @@ export default function StagePage() {
           })}
         </nav>
       </div>
+      {/* 関連スキル */}
+      {(() => {
+        const skillInfo = STAGE_SKILL_MAP[stageId];
+        if (!skillInfo) return null;
+        const section = ALL_SECTIONS.find(s => s.id === skillInfo.sectionId);
+        if (!section) return null;
+        const total = section.lessons.length;
+        const done = skillCountMap[skillInfo.sectionId] ?? 0;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        return (
+          <div className="p-3 border-t" style={{ borderColor: theme.sidebarBorderColor }}>
+            <p className="text-[9px] text-slate-600 uppercase tracking-wider mb-1.5 font-medium">📚 関連スキル</p>
+            <p className="text-[10px] font-semibold leading-tight" style={{ color: skillInfo.color }}>{skillInfo.label}</p>
+            <div className="flex items-center justify-between mt-1 mb-1">
+              <span className="text-[9px] text-slate-500">{done}/{total} レッスン</span>
+              {done === total && total > 0 && (
+                <span className="text-[9px] text-green-400 font-bold">✓ 完了</span>
+              )}
+            </div>
+            <div className="w-full h-0.5 rounded-full bg-slate-800 overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: skillInfo.color }} />
+            </div>
+            {done === 0 && (
+              <Link href="/skills" className="text-[9px] text-slate-600 hover:text-slate-400 mt-1.5 block transition-colors">
+                スキルで先に学ぶ →
+              </Link>
+            )}
+          </div>
+        );
+      })()}
       {/* XP mini bar */}
       {isSupabaseConfigured() && (
         <div className="p-3 border-t" style={{ borderColor: theme.sidebarBorderColor }}>

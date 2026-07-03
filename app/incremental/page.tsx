@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { IncrementalLab } from '@/components/incremental/IncrementalLab';
@@ -63,7 +63,7 @@ const PRO_FEATURES = [
   'クライアントストーリー付きのRPG体験',
 ];
 
-export default function IncrementalPage() {
+function IncrementalPageContent() {
   const searchParams = useSearchParams();
   const initialQuest = (searchParams.get('quest') === 'saas' ? 'saas' : 'ec-site') as 'ec-site' | 'saas';
 
@@ -156,5 +156,13 @@ export default function IncrementalPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function IncrementalPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>
+      <IncrementalPageContent />
+    </Suspense>
   );
 }

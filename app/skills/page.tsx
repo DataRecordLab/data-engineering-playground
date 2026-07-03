@@ -3,8 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ALL_SECTIONS } from '@/lib/skills';
-import { getSkillProgress } from '@/lib/supabase/progress';
+import { getSkillProgress, getUserProgress } from '@/lib/supabase/progress';
 import type { SkillSection, SkillLesson } from '@/types';
+
+// スキルセクション → 関連クエストステージのマッピング
+const SECTION_STAGE_MAP: Record<string, { stageId: string; questId: string }> = {
+  'pipeline-basics': { stageId: 'pipeline', questId: 'ec-site' },
+  'data-modeling':   { stageId: 'warehouse', questId: 'ec-site' },
+  'data-quality':    { stageId: 'staging', questId: 'ec-site' },
+};
 
 // ── 進捗マップ型 ──────────────────────────────────────────────────────
 
@@ -101,11 +108,13 @@ function SectionBlock({
   completed,
   sectionIdx,
   prevSectionDone,
+  questStars,
 }: {
   section: SkillSection;
   completed: CompletedMap;
   sectionIdx: number;
   prevSectionDone: boolean;
+  questStars: Record<string, number>;
 }) {
   const totalInSection = section.lessons.length;
   const completedInSection = section.lessons.filter(l => completed[`${section.id}/${l.id}`]).length;
@@ -178,23 +187,55 @@ function SectionBlock({
       </div>
 
       {/* セクション完了後のQuestアップセル */}
-      {sectionDone && section.upsell && (
-        <div
-          className="mx-4 mb-4 rounded-xl border px-4 py-3.5 flex items-center justify-between gap-3"
-          style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.2)' }}
-        >
-          <div>
-            <p className="text-amber-400 text-xs font-bold">🎯 実践クエストで試す</p>
-            <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{section.upsell.message}</p>
-          </div>
-          <Link
-            href={`/quest/${section.upsell.questId}`}
-            className="flex-shrink-0 px-3 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 font-bold text-[10px] transition-colors whitespace-nowrap"
+      {sectionDone && section.upsell && (() => {
+        const mapped = SECTION_STAGE_MAP[section.id];
+        const stars = mapped ? (questStars[mapped.stageId] ?? 0) : 0;
+        const questDone = stars > 0;
+        return (
+          <div
+            className="mx-4 mb-4 rounded-xl border px-4 py-3.5"
+            style={questDone
+              ? { background: 'rgba(34,197,94,0.05)', borderColor: 'rgba(34,197,94,0.2)' }
+              : { background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.2)' }
+            }
           >
-            試す →
-          </Link>
-        </div>
-      )}
+            {questDone ? (
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-green-400 text-xs font-bold flex items-center gap-1.5">
+                    <span>✓ クエスト実践済み</span>
+                    <span className="flex">
+                      {[1,2,3].map(n => (
+                        <span key={n} className={`text-[10px] ${n <= stars ? 'text-yellow-400' : 'text-slate-700'}`}>★</span>
+                      ))}
+                    </span>
+                  </p>
+                  <p className="text-slate-500 text-xs mt-0.5">クエストでスキルを実践できました！さらに高得点を狙おう</p>
+                </div>
+                <Link
+                  href={`/quest/${section.upsell.questId}/${mapped?.stageId ?? ''}`}
+                  className="flex-shrink-0 px-3 py-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 font-bold text-[10px] transition-colors whitespace-nowrap"
+                >
+                  再挑戦 →
+                </Link>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-amber-400 text-xs font-bold">🎯 実践クエストで試す</p>
+                  <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{section.upsell.message}</p>
+                </div>
+                <Link
+                  href={`/quest/${section.upsell.questId}`}
+                  className="flex-shrink-0 px-3 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 font-bold text-[10px] transition-colors whitespace-nowrap"
+                >
+                  試す →
+                </Link>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* セクション区切り */}
       <div className="flex items-center gap-3 mx-8 mt-4">
@@ -212,17 +253,26 @@ export default function SkillsPage() {
   const [completed, setCompleted] = useState<CompletedMap>({});
   const [skillXp, setSkillXp] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [questStars, setQuestStars] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    getSkillProgress().then(rows => {
+    Promise.all([
+      getSkillProgress(),
+      getUserProgress('ec-site'),
+    ]).then(([skillRows, questRows]) => {
       const map: CompletedMap = {};
       let xp = 0;
-      for (const row of rows) {
+      for (const row of skillRows) {
         map[`${row.section_id}/${row.lesson_id}`] = { xp: row.xp_earned, stars: row.stars };
         xp += row.xp_earned;
       }
       setCompleted(map);
       setSkillXp(xp);
+      const stars: Record<string, number> = {};
+      for (const row of questRows) {
+        stars[row.stage] = row.stars;
+      }
+      setQuestStars(stars);
       setLoading(false);
     });
   }, []);
@@ -288,6 +338,7 @@ export default function SkillsPage() {
                 completed={completed}
                 sectionIdx={sectionIdx}
                 prevSectionDone={prevSectionDone}
+                questStars={questStars}
               />
             );
           })}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { LineageGraph } from '@/components/lineage/LineageGraph';
@@ -62,7 +62,7 @@ const PRO_FEATURES = [
   '実際の業界データを使った複雑なリネージ演習',
 ];
 
-export default function LineagePage() {
+function LineagePageContent() {
   const searchParams = useSearchParams();
   const initialQuest = (searchParams.get('quest') === 'saas' ? 'saas' : 'ec-site') as 'ec-site' | 'saas';
 
@@ -154,5 +154,13 @@ export default function LineagePage() {
         />
       )}
     </div>
+  );
+}
+
+export default function LineagePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>
+      <LineagePageContent />
+    </Suspense>
   );
 }

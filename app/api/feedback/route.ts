@@ -27,12 +27,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as FeedbackRequest;
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { responseMimeType: 'application/json' },
+    });
 
     const result = await model.generateContent(buildPrompt(body));
     const text = result.response.text();
 
-    const data = JSON.parse(text) as FeedbackResponse;
+    // Gemini が ```json ... ``` で返す場合に備えてクリーニング
+    const cleaned = text.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
+    const data = JSON.parse(cleaned) as FeedbackResponse;
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json(
