@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getQuest } from '@/lib/scenarios';
 import { registerCsvFile } from '@/lib/duckdb/engine';
-import { StageCompleteOverlay } from '@/components/stage/StageCompleteOverlay';
+import { StageCompleteOverlay, type LabHint } from '@/components/stage/StageCompleteOverlay';
 import { GameOverOverlay } from '@/components/stage/GameOverOverlay';
 import { QuestPipelineDesigner } from '@/components/pipeline/QuestPipelineDesigner';
 import { WorldProgressBar } from '@/components/pipeline/WorldProgressBar';
@@ -27,6 +27,56 @@ import { useEmergencyEvent } from '@/hooks/useEmergencyEvent';
 import type { EmergencyEvent } from '@/lib/events/emergencyEvents';
 import { MissionToast } from '@/components/daily/MissionToast';
 import { completeDailyMission } from '@/lib/daily/missions';
+
+function getLabHints(questId: string, stageId: string): LabHint[] {
+  const q = questId === 'saas' ? 'saas' : 'ec-site';
+  const base: Record<string, LabHint[]> = {
+    source: [
+      {
+        label: 'Incremental Load Lab',
+        emoji: '⏱',
+        href: `/incremental?quest=${q}`,
+        description: q === 'saas'
+          ? 'サブスクデータで Full Load vs CDC を体験'
+          : '注文データで差分ロードの威力を体感',
+      },
+    ],
+    staging: [],
+    warehouse: [
+      {
+        label: 'Data Lineage Visualizer',
+        emoji: '🔗',
+        href: `/lineage?quest=${q}`,
+        description: q === 'saas'
+          ? 'fct_mrr がどのテーブルに依存しているか確認'
+          : 'fact_orders の上流・下流の依存関係を確認',
+      },
+    ],
+    mart: [
+      {
+        label: 'DAG Lab',
+        emoji: '🗺️',
+        href: '/dag',
+        description: 'あなたが設計したパイプラインがDAGになる',
+      },
+      {
+        label: 'Data Lineage Visualizer',
+        emoji: '🔗',
+        href: `/lineage?quest=${q}`,
+        description: 'mart層まで繋がった全リネージを確認',
+      },
+    ],
+    pipeline: [
+      {
+        label: 'DAG Lab',
+        emoji: '🗺️',
+        href: '/dag',
+        description: 'この設計がオーケストレーションDAGになる',
+      },
+    ],
+  };
+  return base[stageId] ?? [];
+}
 
 type WorldTheme = {
   bgStyle: string;
@@ -380,8 +430,9 @@ export default function StagePage() {
             xpEarned={completion.xpEarned}
             newTotalXp={completion.newTotalXp}
             badgeId={completion.badgeId}
-            nextLabel={`次へ: ${nextStage?.title} →`}
+            nextLabel={isLastStage ? 'クエスト完了！ → ダッシュボードへ' : `次へ: ${nextStage?.title} →`}
             onNext={handleNext}
+            labHints={getLabHints(questId, stageId)}
           />
         )}
         {/* Content: z-10 to sit above atmosphere */}
@@ -497,6 +548,7 @@ export default function StagePage() {
           badgeId={completion.badgeId}
           nextLabel={isLastStage ? 'クエスト完了！ → ダッシュボードへ' : `次へ: ${nextStage?.title} →`}
           onNext={handleNext}
+          labHints={getLabHints(questId, stageId)}
         />
       )}
 

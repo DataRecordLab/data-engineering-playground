@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 const XP_PER_LEVEL = 500;
 
@@ -11,6 +12,13 @@ const BADGE_LABELS: Record<string, string> = {
   kpi_builder: 'KPI Builder',
 };
 
+export interface LabHint {
+  label: string;
+  emoji: string;
+  href: string;
+  description: string;
+}
+
 interface StageCompleteOverlayProps {
   stars: number;
   xpEarned: number;
@@ -18,6 +26,7 @@ interface StageCompleteOverlayProps {
   badgeId?: string;
   nextLabel: string;
   onNext: () => void;
+  labHints?: LabHint[];
 }
 
 export function StageCompleteOverlay({
@@ -27,6 +36,7 @@ export function StageCompleteOverlay({
   badgeId,
   nextLabel,
   onNext,
+  labHints,
 }: StageCompleteOverlayProps) {
   const [visible, setVisible] = useState(false);
   const [starsShown, setStarsShown] = useState(0);
@@ -132,6 +142,29 @@ export function StageCompleteOverlay({
               <p className="text-amber-400 text-xs font-medium">バッジ取得！</p>
               <p className="text-amber-300/70 text-xs">{BADGE_LABELS[badgeId] ?? badgeId}</p>
             </div>
+          </div>
+        )}
+
+        {/* Lab hints */}
+        {labHints && labHints.length > 0 && xpShown && (
+          <div className="w-full space-y-2">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider text-center font-mono">
+              ⚗️ Labで深く体験する
+            </p>
+            {labHints.map(hint => (
+              <Link
+                key={hint.href}
+                href={hint.href}
+                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/15 hover:border-indigo-500/40 transition-all"
+              >
+                <span className="text-xl flex-shrink-0">{hint.emoji}</span>
+                <div className="text-left min-w-0 flex-1">
+                  <p className="text-xs font-bold text-indigo-300">{hint.label}</p>
+                  <p className="text-[10px] text-slate-500 truncate">{hint.description}</p>
+                </div>
+                <span className="text-slate-600 text-xs flex-shrink-0">→</span>
+              </Link>
+            ))}
           </div>
         )}
 

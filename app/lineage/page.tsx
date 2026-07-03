@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { LineageGraph } from '@/components/lineage/LineageGraph';
 import { LabGuidePanel, type GuideStep } from '@/components/labs/LabGuidePanel';
@@ -62,12 +63,23 @@ const PRO_FEATURES = [
 ];
 
 export default function LineagePage() {
-  const [questId, setQuestId] = useState<'ec-site' | 'saas'>('ec-site');
+  const searchParams = useSearchParams();
+  const initialQuest = (searchParams.get('quest') === 'saas' ? 'saas' : 'ec-site') as 'ec-site' | 'saas';
+
+  const [questId, setQuestId] = useState<'ec-site' | 'saas'>(initialQuest);
   const [guideStep, setGuideStep] = useState(0);
   const [showProGate, setShowProGate] = useState(false);
   const [nodeSelected, setNodeSelected] = useState(false);
+  const [fromQuest, setFromQuest] = useState(!!searchParams.get('quest'));
 
   const guideSteps = GUIDE_STEPS_BY_QUEST[questId];
+
+  useEffect(() => {
+    if (fromQuest) {
+      const t = setTimeout(() => setFromQuest(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [fromQuest]);
 
   function handleQuestChange(id: 'ec-site' | 'saas') {
     setQuestId(id);
@@ -84,6 +96,14 @@ export default function LineagePage() {
 
   return (
     <div className="relative flex flex-col min-h-screen">
+      {/* クエスト完了からの誘導トースト */}
+      {fromQuest && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-indigo-600 shadow-xl shadow-indigo-900/40 text-white text-xs font-medium">
+          <span className="text-base">🔗</span>
+          <span>クエストのパイプラインをリネージで確認中</span>
+          <button onClick={() => setFromQuest(false)} className="ml-1 text-indigo-300 hover:text-white">✕</button>
+        </div>
+      )}
       {/* クエスト選択タブ + バナー */}
       <div
         className="flex items-center justify-between px-6 py-2 border-b border-slate-800/60 flex-shrink-0"
