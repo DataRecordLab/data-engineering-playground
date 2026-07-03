@@ -201,7 +201,7 @@ function ResultScreen({ rec, answers }: { rec: Recommendation; answers: Record<s
         {/* CTA */}
         <div className="space-y-3">
           <Link
-            href={`/quest/${rec.questId}/${rec.stageId}`}
+            href={`/quest/${rec.questId}`}
             className="flex items-center justify-center gap-2 w-full py-4 rounded-xl font-black text-sm transition-all hover:scale-105 hover:shadow-xl text-slate-950"
             style={{ background: rec.accent, boxShadow: `0 4px 24px ${rec.accent}40` }}
           >
