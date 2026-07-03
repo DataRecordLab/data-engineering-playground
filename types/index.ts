@@ -176,7 +176,7 @@ export const PRESET_CHARACTERS: { name: string; config: CharacterConfig }[] = [
 
 // ── Skills (Duolingo-style) ──────────────────────────────────────────
 
-export type SkillQuestionType = 'multiple_choice' | 'true_false' | 'ordering';
+export type SkillQuestionType = 'multiple_choice' | 'true_false' | 'ordering' | 'fill_blank';
 
 interface BaseQuestion {
   id: string;
@@ -201,7 +201,14 @@ export interface OrderingQuestion extends BaseQuestion {
   correctOrder: number[];
 }
 
-export type SkillQuestion = MultipleChoiceQuestion | TrueFalseQuestion | OrderingQuestion;
+export interface FillBlankQuestion extends BaseQuestion {
+  type: 'fill_blank';
+  answer: string;
+  acceptedAnswers?: string[];
+  placeholder?: string;
+}
+
+export type SkillQuestion = MultipleChoiceQuestion | TrueFalseQuestion | OrderingQuestion | FillBlankQuestion;
 
 export interface SkillLesson {
   id: string;

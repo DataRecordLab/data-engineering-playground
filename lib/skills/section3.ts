@@ -22,15 +22,12 @@ export const SECTION_MODELING: SkillSection = {
       questions: [
         {
           id: 'q1',
-          type: 'multiple_choice',
-          question: 'スタースキーマで中心に置く「factテーブル」が持つべきデータはどれですか？',
-          options: [
-            { label: 'ユーザーの名前・メールアドレス・登録日', correct: false },
-            { label: '注文金額・注文日時・外部キー（user_key, product_key）', correct: true },
-            { label: '商品名・カテゴリ・価格', correct: false },
-            { label: '売上サマリーと平均単価', correct: false },
-          ],
-          explanation: 'factテーブルは「出来事（イベント）」を記録します。注文という出来事が持つ数値（金額）・日時・関連エンティティへの外部キーを格納します。名前や属性はdimテーブルの仕事です。',
+          type: 'fill_blank',
+          question: 'スタースキーマで中心に置く「計測値テーブル」のプレフィックスを書いてください。例: ??? + orders = fact_orders',
+          answer: 'fact_',
+          acceptedAnswers: ['fact'],
+          placeholder: '????_',
+          explanation: 'fact_ プレフィックスが正解です。factテーブルは「出来事」を記録し、数値（金額・数量）と外部キーを持ちます。周囲の属性テーブルは dim_（dimension）プレフィックスを使います。',
         },
         {
           id: 'q2',
@@ -206,15 +203,12 @@ export const SECTION_MODELING: SkillSection = {
         },
         {
           id: 'q3',
-          type: 'multiple_choice',
-          question: 'SCD（Slowly Changing Dimension）とは何ですか？',
-          options: [
-            { label: 'factテーブルの行数が増え続けること', correct: false },
-            { label: 'dimテーブルの属性値が時間とともに変わる問題への対処法', correct: true },
-            { label: 'SQLのCREATE文が遅い問題', correct: false },
-            { label: '新しいdimテーブルを追加する方法', correct: false },
-          ],
-          explanation: 'ユーザーの住所変更・商品カテゴリの変更など、dimの属性は変わることがあります。SCD（緩やかに変化するディメンション）は履歴をどう保持するかの設計パターンです。',
+          type: 'fill_blank',
+          question: 'dimテーブルの属性が時間とともに変化する問題への対処設計パターンを、略称3文字で答えてください。',
+          answer: 'SCD',
+          acceptedAnswers: ['scd', 'Slowly Changing Dimension', 'slowly changing dimension'],
+          placeholder: '???',
+          explanation: 'SCD（Slowly Changing Dimension）が正解です。ユーザーの住所変更・商品カテゴリの変更など、dimの属性は変わることがあります。履歴をどう保持するかの設計パターンです。',
         },
         {
           id: 'q4',

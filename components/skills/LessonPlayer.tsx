@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import type { SkillLesson, SkillQuestion, MultipleChoiceQuestion, TrueFalseQuestion, OrderingQuestion } from '@/types';
+import { useState, useCallback, useRef } from 'react';
+import type { SkillLesson, SkillQuestion, MultipleChoiceQuestion, TrueFalseQuestion, OrderingQuestion, FillBlankQuestion } from '@/types';
 import { useGameStore } from '@/lib/store/gameStore';
 
 // ── 問題コンポーネント ───────────────────────────────────────────────
@@ -140,6 +140,66 @@ function OrderingCard({ q, onAnswer }: { q: OrderingQuestion; onAnswer: (correct
   );
 }
 
+function FillBlankCard({ q, onAnswer }: { q: FillBlankQuestion; onAnswer: (correct: boolean) => void }) {
+  const [value, setValue] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [correct, setCorrect] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function normalize(s: string) {
+    return s.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  function check() {
+    if (!value.trim() || submitted) return;
+    const v = normalize(value);
+    const ok =
+      v === normalize(q.answer) ||
+      (q.acceptedAnswers ?? []).some(a => v === normalize(a));
+    setCorrect(ok);
+    setSubmitted(true);
+    setTimeout(() => onAnswer(ok), 900);
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && check()}
+          disabled={submitted}
+          placeholder={q.placeholder ?? '答えを入力...'}
+          autoFocus
+          className={`w-full px-4 py-3.5 rounded-xl border text-sm font-mono transition-all outline-none disabled:cursor-default ${
+            !submitted
+              ? 'border-slate-700 bg-slate-900 text-white placeholder:text-slate-600 focus:border-indigo-500/60 focus:bg-slate-900/80'
+              : correct
+              ? 'border-green-500/60 bg-green-500/10 text-green-300'
+              : 'border-red-500/60 bg-red-500/10 text-red-300'
+          }`}
+        />
+        {submitted && !correct && (
+          <p className="mt-2 text-xs text-slate-500 font-mono">
+            正解: <span className="text-green-400 font-bold">{q.answer}</span>
+          </p>
+        )}
+      </div>
+      {!submitted && (
+        <button
+          onClick={check}
+          disabled={!value.trim()}
+          className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors"
+        >
+          確認する
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── メインプレイヤー ──────────────────────────────────────────────────
 
 type Phase = 'question' | 'feedback' | 'complete';
@@ -212,6 +272,7 @@ export function LessonPlayer({ lesson, onComplete }: Props) {
               {q.type === 'multiple_choice' && <MultipleChoiceCard q={q as MultipleChoiceQuestion} onAnswer={handleAnswer} />}
               {q.type === 'true_false' && <TrueFalseCard q={q as TrueFalseQuestion} onAnswer={handleAnswer} />}
               {q.type === 'ordering' && <OrderingCard q={q as OrderingQuestion} onAnswer={handleAnswer} />}
+              {q.type === 'fill_blank' && <FillBlankCard key={qIdx} q={q as FillBlankQuestion} onAnswer={handleAnswer} />}
             </>
           )}
 
@@ -249,4 +310,5 @@ const QUESTION_TYPE_LABEL: Record<string, string> = {
   multiple_choice: '選択問題',
   true_false: '正誤問題',
   ordering: '並び替え',
+  fill_blank: '記述問題',
 };
