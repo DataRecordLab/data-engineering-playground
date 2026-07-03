@@ -76,10 +76,12 @@ export function buildDagFromQuest(questId: string, completedStages: string[]): D
   const tmpl = TEMPLATES[questId];
   if (!tmpl) return null;
 
-  const hasSource    = completedStages.includes('source');
-  const hasStaging   = completedStages.includes('staging');
-  const hasWarehouse = completedStages.includes('warehouse');
-  const hasMart      = completedStages.includes('mart');
+  // pipeline ステージ（全体設計）を完了している場合は全レイヤーが揃っているとみなす
+  const hasPipeline  = completedStages.includes('pipeline');
+  const hasSource    = completedStages.includes('source')    || hasPipeline;
+  const hasStaging   = completedStages.includes('staging')   || hasPipeline;
+  const hasWarehouse = completedStages.includes('warehouse') || hasPipeline;
+  const hasMart      = completedStages.includes('mart')      || hasPipeline;
 
   if (!hasSource) return null; // need at least source
 

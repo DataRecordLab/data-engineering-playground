@@ -6,6 +6,7 @@ import { DagLab } from '@/components/dag/DagLab';
 import { LabGuidePanel, type GuideStep } from '@/components/labs/LabGuidePanel';
 import { ProGate } from '@/components/labs/ProGate';
 import type { DagScenario } from '@/lib/dag';
+import { buildDagFromQuest } from '@/lib/dag/fromPipeline';
 
 const GUIDE_STEPS: GuideStep[] = [
   {
@@ -48,10 +49,33 @@ export default function DagPage() {
     fetch('/api/dag/my-pipelines')
       .then(r => r.json())
       .then((data: { scenarios: DagScenario[] }) => {
-        if (data.scenarios?.length) setUserScenarios(data.scenarios);
+        if (data.scenarios?.length) {
+          setUserScenarios(data.scenarios);
+        } else {
+          // ゲストはlocalStorageから進捗を読んでシナリオを構築
+          loadGuestScenarios();
+        }
       })
-      .catch(() => {});
+      .catch(() => loadGuestScenarios());
   }, []);
+
+  function loadGuestScenarios() {
+    if (typeof window === 'undefined') return;
+    const questIds = ['ec-site', 'saas'];
+    const found: DagScenario[] = [];
+    for (const qid of questIds) {
+      try {
+        const raw = localStorage.getItem(`guest_progress_${qid}`);
+        if (!raw) continue;
+        const stages: string[] = JSON.parse(raw);
+        if (stages.length > 0) {
+          const scenario = buildDagFromQuest(qid, stages);
+          if (scenario) found.push(scenario);
+        }
+      } catch { /* ignore */ }
+    }
+    if (found.length > 0) setUserScenarios(found);
+  }
 
   function handleDagRun(_scenarioId: string) {
     if (guideStep < 1) setGuideStep(1);

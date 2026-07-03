@@ -299,6 +299,16 @@ export default function StagePage() {
       completeDailyMission('pipeline_design');
     }
 
+    // ゲストの進捗をlocalStorageに保存（DAGラボ連携用）
+    if (isGuest && typeof window !== 'undefined') {
+      try {
+        const key = `guest_progress_${questId}`;
+        const existing: string[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+        if (!existing.includes(stageId)) existing.push(stageId);
+        localStorage.setItem(key, JSON.stringify(existing));
+      } catch { /* ignore */ }
+    }
+
     setCompletion({ stars, xpEarned, newTotalXp, badgeId: stage.badgeId });
   };
 
