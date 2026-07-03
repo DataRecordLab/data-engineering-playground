@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -20,12 +20,30 @@ import {
 } from '@/lib/dag';
 import { DagPreRunQuiz, DagBottleneckQuiz, DagFailureDecision } from '@/components/dag/DagThinkingOverlay';
 
+// ── ステージレイヤー判定 ──────────────────────────────────────────────────────
+
+const LAYER_META: Record<string, { label: string; color: string; stage: string }> = {
+  extract: { label: 'Source',    color: '#60a5fa', stage: 'source'    },
+  stg:     { label: 'Staging',   color: '#34d399', stage: 'staging'   },
+  fct:     { label: 'Warehouse', color: '#f87171', stage: 'warehouse' },
+  mart:    { label: 'Mart',      color: '#a78bfa', stage: 'mart'      },
+};
+
+function getTaskLayer(taskId: string) {
+  if (taskId.startsWith('extract_')) return LAYER_META.extract;
+  if (taskId.startsWith('stg_'))     return LAYER_META.stg;
+  if (taskId.startsWith('fct_'))     return LAYER_META.fct;
+  if (taskId.startsWith('mart_'))    return LAYER_META.mart;
+  return null;
+}
+
 // ── タスクノード ──────────────────────────────────────────────────────────────
 
 function TaskNode({ data }: NodeProps) {
-  const task = data as DagTask & { status: TaskStatus };
+  const task = data as DagTask & { status: TaskStatus; isUserPipeline?: boolean };
   const typeMeta = TASK_TYPE_META[task.type];
   const statusMeta = STATUS_META[task.status];
+  const layer = task.isUserPipeline ? getTaskLayer(task.id) : null;
 
   return (
     <div
@@ -49,6 +67,15 @@ function TaskNode({ data }: NodeProps) {
       <Handle type="target" position={Position.Left} style={{ background: statusMeta.color, width: 8, height: 8 }} />
       <Handle type="source" position={Position.Right} style={{ background: statusMeta.color, width: 8, height: 8 }} />
       <div className="px-3 py-2.5">
+        {/* レイヤーバッジ（ユーザーパイプライン時のみ） */}
+        {layer && (
+          <div
+            className="text-[8px] font-black px-1.5 py-0.5 rounded mb-1.5 inline-block uppercase tracking-wider"
+            style={{ color: layer.color, background: layer.color + '18', border: `1px solid ${layer.color}30` }}
+          >
+            {layer.label}ステージ
+          </div>
+        )}
         <div className="flex items-center gap-1.5 mb-1">
           <span className="text-sm">{typeMeta.icon}</span>
           <span className="text-[9px] font-mono font-bold" style={{ color: typeMeta.color }}>
@@ -99,6 +126,18 @@ export function DagLab({ onDagRun, lockedScenarioIdx = [], onLockedClick, extraS
   const [log, setLog] = useState<{ time: string; msg: string; color: string }[]>([]);
   const [phase, setPhase] = useState<RunPhase>('precheck');
   const timerRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const autoSelectedRef = useRef(false);
+
+  // ユーザーパイプラインがロードされたら自動選択
+  useEffect(() => {
+    if (autoSelectedRef.current || extraScenarios.length === 0) return;
+    const combined = [...DAG_SCENARIOS, ...extraScenarios];
+    const userIdx = combined.findIndex(s => s.isUserPipeline);
+    if (userIdx >= 0) {
+      autoSelectedRef.current = true;
+      setScenarioIdx(userIdx);
+    }
+  }, [extraScenarios]);
 
   const scenario: DagScenario = allScenarios[scenarioIdx] ?? allScenarios[0];
 
@@ -198,7 +237,7 @@ export function DagLab({ onDagRun, lockedScenarioIdx = [], onLockedClick, extraS
     id: task.id,
     type: 'task',
     position: { x: task.x, y: task.y },
-    data: { ...task, status: statuses[task.id] ?? 'pending' },
+    data: { ...task, status: statuses[task.id] ?? 'pending', isUserPipeline: scenario.isUserPipeline },
     draggable: false,
   }));
 
@@ -326,6 +365,47 @@ export function DagLab({ onDagRun, lockedScenarioIdx = [], onLockedClick, extraS
           </div>
         )}
       </div>
+
+      {/* ユーザーパイプライン — 設計内容の説明パネル */}
+      {scenario.isUserPipeline && phase === 'precheck' && (
+        <div className="px-6 py-3 border-b border-emerald-500/15 bg-emerald-950/20 flex items-center gap-6 flex-shrink-0">
+          <div className="flex-shrink-0">
+            <p className="text-[10px] text-emerald-400 font-bold mb-1.5 uppercase tracking-wider">あなたが設計したレイヤー</p>
+            <div className="flex items-center gap-1.5">
+              {[
+                { prefix: 'extract_', ...LAYER_META.extract },
+                { prefix: 'stg_',     ...LAYER_META.stg },
+                { prefix: 'fct_',     ...LAYER_META.fct },
+                { prefix: 'mart_',    ...LAYER_META.mart },
+              ].map((layer, i, arr) => {
+                const present = scenario.tasks.some(t => t.id.startsWith(layer.prefix));
+                return (
+                  <div key={layer.stage} className="flex items-center gap-1.5">
+                    <div
+                      className="flex items-center gap-1 px-2 py-1 rounded text-[9px] font-bold"
+                      style={{
+                        color: present ? layer.color : '#374151',
+                        background: present ? layer.color + '18' : '#0f172a',
+                        border: `1px solid ${present ? layer.color + '40' : '#1e293b'}`,
+                        opacity: present ? 1 : 0.4,
+                      }}
+                    >
+                      {present ? '✓' : '○'} {layer.label}
+                    </div>
+                    {i < arr.length - 1 && (
+                      <span className="text-slate-700 text-[10px]">→</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="text-[10px] text-slate-500 leading-relaxed border-l border-slate-800 pl-6">
+            <p className="text-slate-400 font-medium mb-0.5">各ノードの色バッジ = クエストで設計したステージです</p>
+            <p>ノードを辿って <span className="text-blue-400">Source</span> → <span className="text-emerald-400">Staging</span> → <span className="text-red-400">Warehouse</span> → <span className="text-purple-400">Mart</span> の流れを確認してみよう</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden relative">
         {/* DAG Canvas */}
