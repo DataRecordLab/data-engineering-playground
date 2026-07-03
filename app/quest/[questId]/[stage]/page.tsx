@@ -194,6 +194,7 @@ export default function StagePage() {
   const [userXp, setUserXp] = useState(0);
   const [stageStars, setStageStars] = useState<Record<string, number>>({});
   const [skillCountMap, setSkillCountMap] = useState<Record<string, number>>({});
+  const [isGuest, setIsGuest] = useState(false);
 
   // Random emergency event (25-90s after entering stage, not during completion/gameover/intro)
   useEmergencyEvent({
@@ -216,6 +217,8 @@ export default function StagePage() {
         if (profile.character_config && !characterConfigLoaded) {
           setCharacterConfig(profile.character_config as CharacterConfig);
         }
+      } else {
+        setIsGuest(true);
       }
       const starsMap: Record<string, number> = {};
       progress.forEach(p => { starsMap[p.stage] = p.stars; });
@@ -478,6 +481,7 @@ export default function StagePage() {
             nextLabel={isLastStage ? 'クエスト完了！ → ダッシュボードへ' : `次へ: ${nextStage?.title} →`}
             onNext={handleNext}
             labHints={getLabHints(questId, stageId)}
+            isGuest={isGuest}
           />
         )}
         {/* Content: z-10 to sit above atmosphere */}
@@ -508,6 +512,21 @@ export default function StagePage() {
             </div>
           </header>
           <WorldProgressBar currentStageId={stageId} stageStars={stageStars} characterConfig={characterConfig} />
+          {/* ゲスト向け保存バナー */}
+          {isGuest && !completion && (
+            <div className="flex items-center justify-between px-4 py-2 bg-indigo-950/80 border-b border-indigo-800/40 flex-shrink-0">
+              <p className="text-xs text-indigo-300">
+                <span className="font-bold">📊 進捗が保存されていません</span>
+                <span className="text-indigo-400/70 ml-2">アカウントを作ると続きから再開できます</span>
+              </p>
+              <Link
+                href="/signup"
+                className="flex-shrink-0 ml-4 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] transition-colors"
+              >
+                保存する（無料）
+              </Link>
+            </div>
+          )}
           <div className="flex flex-1 overflow-hidden">
             <StageSidebar />
             {/* Center: mission */}
@@ -632,6 +651,21 @@ export default function StagePage() {
           </div>
         </header>
         <WorldProgressBar currentStageId={stageId} stageStars={stageStars} />
+        {/* ゲスト向け保存バナー */}
+        {isGuest && !completion && (
+          <div className="flex items-center justify-between px-4 py-2 bg-indigo-950/80 border-b border-indigo-800/40 flex-shrink-0">
+            <p className="text-xs text-indigo-300">
+              <span className="font-bold">📊 進捗が保存されていません</span>
+              <span className="text-indigo-400/70 ml-2">アカウントを作ると続きから再開できます</span>
+            </p>
+            <Link
+              href="/signup"
+              className="flex-shrink-0 ml-4 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] transition-colors"
+            >
+              保存する（無料）
+            </Link>
+          </div>
+        )}
 
         <div className="flex flex-1 overflow-hidden">
           <StageSidebar />

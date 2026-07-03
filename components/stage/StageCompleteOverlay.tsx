@@ -27,6 +27,7 @@ interface StageCompleteOverlayProps {
   nextLabel: string;
   onNext: () => void;
   labHints?: LabHint[];
+  isGuest?: boolean;
 }
 
 export function StageCompleteOverlay({
@@ -37,6 +38,7 @@ export function StageCompleteOverlay({
   nextLabel,
   onNext,
   labHints,
+  isGuest,
 }: StageCompleteOverlayProps) {
   const [visible, setVisible] = useState(false);
   const [starsShown, setStarsShown] = useState(0);
@@ -168,12 +170,23 @@ export function StageCompleteOverlay({
           </div>
         )}
 
+        {/* ゲスト向けサインアップ */}
+        {isGuest && xpShown && (
+          <Link
+            href="/signup"
+            className="w-full py-3 rounded-xl text-center font-black text-sm transition-all hover:scale-105 text-slate-950"
+            style={{ background: 'linear-gradient(135deg, #818CF8, #6366F1)', boxShadow: '0 4px 20px rgba(129,140,248,0.4)' }}
+          >
+            🎉 進捗を保存する（無料アカウント作成）
+          </Link>
+        )}
+
         {/* Next button */}
         <button
           onClick={onNext}
-          className="w-full py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold text-sm transition-colors"
+          className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors ${isGuest ? 'bg-slate-800 hover:bg-slate-700 text-slate-400' : 'bg-green-600 hover:bg-green-500 text-white'}`}
         >
-          {nextLabel}
+          {isGuest ? '保存せずに続ける →' : nextLabel}
         </button>
       </div>
     </div>

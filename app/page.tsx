@@ -344,7 +344,7 @@ export default function Page() {
             ログイン
           </Link>
           <Link
-            href="/signup"
+            href="/start"
             className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all hover:shadow-lg hover:shadow-indigo-500/30"
           >
             無料で始める →
@@ -375,7 +375,7 @@ export default function Page() {
 
           <div className="flex flex-wrap gap-3 mb-8">
             <Link
-              href="/signup"
+              href="/start"
               className="flex items-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm transition-all hover:scale-105 hover:shadow-xl hover:shadow-indigo-500/30"
             >
               ▶ 無料で始める
@@ -815,7 +815,7 @@ export default function Page() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
-                href="/signup"
+                href="/start"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-base transition-all hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/30"
               >
                 ▶ 無料で始める
