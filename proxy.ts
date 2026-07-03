@@ -38,13 +38,7 @@ export async function proxy(request: NextRequest) {
   if (!user && pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
-  if (!user && pathname.startsWith('/quest')) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
   if (!user && pathname.startsWith('/onboarding')) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-  if (!user && pathname.startsWith('/skills')) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   if (!user && pathname.startsWith('/debug')) {
@@ -70,5 +64,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/dashboard/:path*', '/quest/:path*', '/onboarding/:path*', '/skills/:path*', '/debug/:path*', '/pipeline/:path*', '/dbt/:path*', '/profile', '/login', '/signup'],
+  matcher: ['/admin/:path*', '/dashboard/:path*', '/onboarding/:path*', '/debug/:path*', '/pipeline/:path*', '/dbt/:path*', '/profile', '/login', '/signup'],
 };
