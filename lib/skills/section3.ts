@@ -19,6 +19,10 @@ export const SECTION_MODELING: SkillSection = {
       description: '分析に最適化されたデータモデルの基本を学ぶ',
       icon: '⭐',
       xpReward: 40,
+      concept: {
+        title: '分析クエリを高速化するモデル',
+        body: 'スタースキーマは分析用に最適化されたデータモデルです。\n\n中心に fact（事実）テーブル、周辺に dim（ディメンション）テーブルを配置します。JOINが単純になり、BIツールからのクエリが高速化します。Warehouse Layer の標準的なモデリング手法です。',
+      },
       questions: [
         {
           id: 'q1',
@@ -69,6 +73,10 @@ export const SECTION_MODELING: SkillSection = {
       description: 'どのデータをfactに置き、dimに置くかを判断できるようになる',
       icon: '🗂️',
       xpReward: 50,
+      concept: {
+        title: '何を計測し、何で切り分けるか',
+        body: 'fact テーブルは「売上・注文数・クリック数」など計測対象の数値データを持ちます。\n\ndim テーブルは「ユーザー・商品・日付」など分析の切り口となる属性情報です。\n\nfact と dim を正しく設計することで、任意の切り口での集計・フィルタリングが可能になります。',
+      },
       questions: [
         {
           id: 'q1',
@@ -128,6 +136,10 @@ export const SECTION_MODELING: SkillSection = {
       description: 'テーブルの1行が何を表すかを明確に定義することの重要性',
       icon: '🔬',
       xpReward: 50,
+      concept: {
+        title: '粒度はfactテーブル設計の核心',
+        body: '粒度（Grain）とは、fact テーブルの1行が「何」を表すかです。\n\n「1注文に1行」なのか「1注文明細に1行」なのかで、集計結果が全く変わります。設計の最初に粒度を明示的に定義することが、モデリングミスを防ぐ最重要ステップです。',
+      },
       questions: [
         {
           id: 'q1',
@@ -181,6 +193,10 @@ export const SECTION_MODELING: SkillSection = {
       description: 'スタースキーマ設計の判断力を鍛える総まとめ',
       icon: '🏆',
       xpReward: 60,
+      concept: {
+        title: '設計の判断を実戦で磨く',
+        body: 'スタースキーマの知識を実際のデータに適用します。\n\n「このカラムは fact か dim か？」「粒度はどこに設定すべきか？」という判断を繰り返すことで、モデリングの感覚が身につきます。正解は1つではなく、ビジネス要件によって変わります。',
+      },
       questions: [
         {
           id: 'q1',

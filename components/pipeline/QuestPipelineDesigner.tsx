@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ReactFlow, {
   addEdge,
   Background,
@@ -899,9 +899,11 @@ interface Props {
 }
 
 function Inner({ layers, onComplete }: Props) {
-  const [activeScenario] = useState<QuestScenario>(
-    () => QUEST_SCENARIOS[Math.floor(Math.random() * QUEST_SCENARIOS.length)]
-  );
+  const [activeScenario, setActiveScenario] = useState<QuestScenario>(QUEST_SCENARIOS[0]);
+
+  useEffect(() => {
+    setActiveScenario(QUEST_SCENARIOS[Math.floor(Math.random() * QUEST_SCENARIOS.length)]);
+  }, []);
   const [phase, setPhase] = useState<'brief' | 'pattern' | 'select' | 'connect'>('brief');
   const [chosenPattern, setChosenPattern] = useState<ArchPattern | null>(null);
 
@@ -935,8 +937,10 @@ function Inner({ layers, onComplete }: Props) {
 
 export function QuestPipelineDesigner(props: Props) {
   return (
-    <ReactFlowProvider>
-      <Inner {...props} />
-    </ReactFlowProvider>
+    <div className="h-full">
+      <ReactFlowProvider>
+        <Inner {...props} />
+      </ReactFlowProvider>
+    </div>
   );
 }

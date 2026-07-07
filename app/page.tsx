@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { MioBadge } from '@/components/characters/MioBadge';
+import { PipelineFlowAnimation } from '@/components/ui/PipelineFlowAnimation';
 
 // ── 定数 ────────────────────────────────────────────────────────────
 
@@ -212,16 +213,50 @@ const FAQS = [
   },
 ];
 
+// ── CodeGridBackground ──────────────────────────────────────────────
+
+const GRID_WORDS = [
+  'SELECT','FROM','WHERE','JOIN','GROUP BY','ORDER BY','PARTITION BY',
+  'CREATE TABLE','stg_orders','fact_orders','dim_users','mart_revenue',
+  'NOT NULL','COALESCE','CAST','COUNT(*)','dbt run','dbt test',
+  'WITH','AS','HAVING','DISTINCT','UNION ALL','LEFT JOIN','ON',
+  'pipeline','source','staging','warehouse','mart','ELT','ETL',
+];
+
+const GRID_ITEMS = Array.from({ length: 36 }, (_, i) => ({
+  word:    GRID_WORDS[i % GRID_WORDS.length],
+  left:    `${((i * 73 + 17) % 92) + 2}%`,
+  top:     `${((i * 47 + 11) % 92) + 2}%`,
+  opacity: 0.028 + (i % 4) * 0.008,
+  size:    `${10 + (i % 3) * 2}px`,
+}));
+
+function CodeGridBackground() {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none" aria-hidden="true">
+      {GRID_ITEMS.map((item, i) => (
+        <span
+          key={i}
+          className="absolute font-mono text-cyan-300 whitespace-nowrap"
+          style={{ left: item.left, top: item.top, opacity: item.opacity, fontSize: item.size }}
+        >
+          {item.word}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // ── GamePreview ─────────────────────────────────────────────────────
 
 function GamePreview() {
   return (
     <div
       className="rounded-2xl overflow-hidden shadow-2xl w-72 flex-shrink-0 border border-indigo-900/40"
-      style={{ background: '#08091a', boxShadow: '0 0 60px rgba(99,102,241,0.15)' }}
+      style={{ background: '#0d0f1a', boxShadow: '0 0 60px rgba(99,102,241,0.15)' }}
     >
       {/* HUD */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800 bg-slate-900/80">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[#272b42] bg-slate-900/80">
         <div className="flex gap-0.5">
           {Array.from({ length: 5 }).map((_, i) => (
             <span key={i} className="text-xs leading-none text-red-500">❤</span>
@@ -269,7 +304,7 @@ function GamePreview() {
         <div className="text-[9px] text-slate-600 mb-2 font-mono tracking-wider">
           ECサイト分析基盤 ／ STAGING
         </div>
-        <div className="rounded-lg bg-slate-900 border border-slate-800 p-2.5 mb-2.5">
+        <div className="rounded-lg bg-slate-900 border border-[#272b42] p-2.5 mb-2.5">
           <div className="text-[9px] text-blue-400 font-bold mb-1">田中シニアエンジニア</div>
           <div className="text-[10px] text-slate-300 leading-relaxed">
             このカラムの型が揃っていないな。<br />原因を診断してみよう！
@@ -295,7 +330,7 @@ function GamePreview() {
           ))}
         </div>
         <div className="mt-2.5 flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-          <span className="text-indigo-400 text-[10px] font-bold">正解！</span>
+          <span className="text-cyan-400 text-[10px] font-bold">正解！</span>
           <span className="text-indigo-300 text-[10px]">+50 XP 獲得</span>
           <span className="ml-auto text-yellow-400 text-[10px] font-bold animate-bounce">⬆ Lv.UP!</span>
         </div>
@@ -308,7 +343,9 @@ function GamePreview() {
 
 export default function Page() {
   return (
-    <div className="min-h-screen bg-[#060918] text-white overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#131525] text-white overflow-x-hidden relative">
+
+      <CodeGridBackground />
 
       {/* 星フィールド */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -330,22 +367,23 @@ export default function Page() {
       </div>
 
       {/* ── ヘッダー ── */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-indigo-950/60">
+      <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-slate-800">
         <div className="flex items-center gap-2">
-          <span className="text-indigo-400 text-xl font-black" style={{ textShadow: '0 0 16px rgba(129,140,248,0.8)' }}>◈</span>
+          <span className="text-cyan-400 text-xl font-black" style={{ textShadow: '0 0 16px rgba(6,182,212,0.8)' }}>◈</span>
           <span className="font-black text-lg tracking-tight">Modelion</span>
-          <span className="text-slate-600 text-xs font-medium ml-1">Agency</span>
+          <span className="text-slate-600 text-xs font-medium ml-1">データワールド</span>
         </div>
         <nav className="flex items-center gap-4">
-          <Link href="/upgrade" className="text-slate-400 hover:text-white text-xs transition-colors hidden sm:block">
+          <Link href="/upgrade" className="text-slate-500 hover:text-white text-xs transition-colors hidden sm:block">
             料金プラン
           </Link>
-          <Link href="/login" className="text-slate-400 hover:text-white text-xs transition-colors">
+          <Link href="/login" className="text-slate-500 hover:text-white text-xs transition-colors">
             ログイン
           </Link>
           <Link
             href="/start"
-            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all hover:shadow-lg hover:shadow-indigo-500/30"
+            className="px-4 py-2 rounded-xl text-white font-black text-xs transition-all hover:scale-105 active:scale-95"
+            style={{ background: '#06B6D4', boxShadow: '0 4px 0 #0891B2' }}
           >
             無料で始める →
           </Link>
@@ -362,7 +400,7 @@ export default function Page() {
 
           <h1 className="text-4xl lg:text-5xl font-black leading-tight mb-5 tracking-tight">
             データパイプラインを<br />
-            <span style={{ color: '#818CF8', textShadow: '0 0 40px rgba(129,140,248,0.35)' }}>
+            <span style={{ color: '#22D3EE', textShadow: '0 0 40px rgba(6,182,212,0.4)' }}>
               設計して体験する
             </span>
           </h1>
@@ -376,13 +414,14 @@ export default function Page() {
           <div className="flex flex-wrap gap-3 mb-8">
             <Link
               href="/start"
-              className="flex items-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm transition-all hover:scale-105 hover:shadow-xl hover:shadow-indigo-500/30"
+              className="flex items-center gap-2 px-7 py-3.5 rounded-xl text-white font-black text-sm transition-all hover:scale-105 active:scale-95"
+              style={{ background: '#06B6D4', boxShadow: '0 5px 0 #0891B2' }}
             >
               ▶ 無料で始める
             </Link>
             <Link
               href="/playground"
-              className="flex items-center gap-2 px-6 py-3.5 rounded-xl border border-slate-700 hover:border-indigo-500/50 text-slate-300 hover:text-white text-sm transition-colors"
+              className="flex items-center gap-2 px-6 py-3.5 rounded-xl border border-[#343856] hover:border-[#6366F1]/50 text-[#8890b0] hover:text-white text-sm transition-colors"
             >
               デモを見る
             </Link>
@@ -391,22 +430,22 @@ export default function Page() {
           <MioBadge
             expression="excited"
             message="一緒にデータエンジニアリングを学ぼう！無料で始められるよ ✦"
-            scale={5}
+            size={80}
           />
         </div>
 
         <div className="flex-1 flex justify-center lg:justify-end">
-          <GamePreview />
+          <PipelineFlowAnimation />
         </div>
       </section>
 
       {/* ── ② 数字で見る実績 ── */}
-      <section className="relative z-10 border-y border-slate-800/60" style={{ background: 'rgba(10,11,30,0.8)' }}>
+      <section className="relative z-10 border-y border-[#272b42]" style={{ background: 'rgba(13,15,26,0.85)' }}>
         <div className="max-w-4xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
           {STATS.map((s) => (
             <div key={s.label} className="text-center">
               <p className="text-3xl font-black text-white mb-0.5">
-                {s.value}<span className="text-indigo-400 text-lg ml-1">{s.unit}</span>
+                {s.value}<span className="text-cyan-400 text-lg ml-1">{s.unit}</span>
               </p>
               <p className="text-slate-500 text-xs">{s.label}</p>
             </div>
@@ -417,7 +456,7 @@ export default function Page() {
       {/* ── ③ コース一覧 ── */}
       <section className="relative z-10 px-6 py-20 max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-indigo-400 text-[10px] font-black tracking-widest uppercase mb-2 font-mono">COURSES</p>
+          <p className="text-cyan-400 text-[10px] font-black tracking-widest uppercase mb-2 font-mono">COURSES</p>
           <h2 className="text-3xl font-black mb-3">何を学べるか</h2>
           <p className="text-slate-500 text-sm">データエンジニアリングの核心概念を3つのコースで体系的に習得</p>
         </div>
@@ -460,7 +499,7 @@ export default function Page() {
         <div className="text-center">
           <Link
             href="/skills"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-indigo-500/30 hover:bg-indigo-500/10 text-indigo-400 font-bold text-sm transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-cyan-500/30 hover:bg-cyan-500/10 text-cyan-400 font-bold text-sm transition-colors"
           >
             スキルパスを見る →
           </Link>
@@ -468,7 +507,7 @@ export default function Page() {
       </section>
 
       {/* ── ④ 学習の流れ ── */}
-      <section className="relative z-10 px-6 py-20" style={{ background: 'rgba(6,9,24,0.95)' }}>
+      <section className="relative z-10 px-6 py-20" style={{ background: 'rgba(13,15,26,0.90)' }}>
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-emerald-400 text-[10px] font-black tracking-widest uppercase mb-2 font-mono">HOW IT WORKS</p>
@@ -580,7 +619,7 @@ export default function Page() {
       </section>
 
       {/* ── ⑥ ミッション & ストリーク ── */}
-      <section className="relative z-10 px-6 py-20" style={{ background: 'rgba(6,9,24,0.95)' }}>
+      <section className="relative z-10 px-6 py-20" style={{ background: 'rgba(13,15,26,0.90)' }}>
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-orange-400 text-[10px] font-black tracking-widest uppercase mb-2 font-mono">DAILY HABIT</p>
@@ -590,7 +629,7 @@ export default function Page() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             {/* ミッションカード */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+            <div className="rounded-2xl border border-[#272b42] bg-slate-900/60 p-6">
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <p className="text-xs text-slate-500 font-mono mb-0.5">TODAY&apos;S MISSIONS</p>
@@ -629,7 +668,7 @@ export default function Page() {
 
             {/* ストリーク説明 */}
             <div className="space-y-5">
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+              <div className="rounded-2xl border border-[#272b42] bg-slate-900/60 p-6">
                 <div className="flex items-center gap-4 mb-4">
                   <span className="text-5xl">🔥</span>
                   <div>
@@ -683,7 +722,7 @@ export default function Page() {
           {LEARNING_EFFECTS.map((e) => (
             <div
               key={e.title}
-              className="rounded-xl border border-slate-800 bg-slate-900/50 p-5 hover:border-slate-700 hover:-translate-y-1 transition-all group"
+              className="rounded-xl border border-[#272b42] bg-slate-900/50 p-5 hover:border-[#343856] hover:-translate-y-1 transition-all group"
             >
               <div className="text-3xl mb-3">{e.icon}</div>
               <div
@@ -697,11 +736,11 @@ export default function Page() {
         </div>
 
         {/* 比較表 */}
-        <div className="max-w-3xl mx-auto rounded-2xl border border-slate-800 overflow-hidden">
-          <div className="grid grid-cols-3 text-xs font-bold border-b border-slate-800">
+        <div className="max-w-3xl mx-auto rounded-2xl border border-[#272b42] overflow-hidden">
+          <div className="grid grid-cols-3 text-xs font-bold border-b border-[#272b42]">
             <div className="px-5 py-3 text-slate-600">学習方法</div>
             <div className="px-5 py-3 text-center text-slate-500 border-x border-slate-800">従来の教材</div>
-            <div className="px-5 py-3 text-center text-indigo-400">Modelion</div>
+            <div className="px-5 py-3 text-center text-cyan-400">Modelion</div>
           </div>
           {[
             ['設計を考える体験',     false, true  ],
@@ -713,14 +752,14 @@ export default function Page() {
           ].map(([label, old, neo]) => (
             <div
               key={label as string}
-              className="grid grid-cols-3 text-xs border-b border-slate-800/50 last:border-0"
+              className="grid grid-cols-3 text-xs border-b border-[#272b42]/80 last:border-0"
             >
               <div className="px-5 py-3 text-slate-400">{label as string}</div>
               <div className="px-5 py-3 text-center text-lg border-x border-slate-800">
                 {old ? '✓' : <span className="text-slate-800">—</span>}
               </div>
               <div className="px-5 py-3 text-center text-lg">
-                {neo ? <span className="text-indigo-400">✓</span> : <span className="text-slate-800">—</span>}
+                {neo ? <span className="text-cyan-400">✓</span> : <span className="text-slate-800">—</span>}
               </div>
             </div>
           ))}
@@ -728,7 +767,7 @@ export default function Page() {
       </section>
 
       {/* ── ⑧ ロードマップ ── */}
-      <section className="relative z-10 px-6 py-20" style={{ background: 'rgba(6,9,24,0.95)' }}>
+      <section className="relative z-10 px-6 py-20" style={{ background: 'rgba(13,15,26,0.90)' }}>
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-blue-400 text-[10px] font-black tracking-widest uppercase mb-2 font-mono">ROADMAP</p>
@@ -785,7 +824,7 @@ export default function Page() {
           {FAQS.map((faq) => (
             <div
               key={faq.q}
-              className="rounded-xl border border-slate-800 bg-slate-900/40 px-6 py-5"
+              className="rounded-xl border border-[#272b42] bg-slate-900/40 px-6 py-5"
             >
               <p className="font-bold text-white text-sm mb-2">Q. {faq.q}</p>
               <p className="text-slate-400 text-xs leading-relaxed">{faq.a}</p>
@@ -810,19 +849,20 @@ export default function Page() {
               <span style={{ color: '#818CF8' }}>旅を始めよう</span>
             </h2>
             <p className="text-slate-400 text-sm mb-8 leading-relaxed">
-              Modelion Agencyに入社して、<br />
+              Modelion データワールドに飛び込んで、<br />
               最初のクエストを受注しよう。今日から始められる。
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/start"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-base transition-all hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/30"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-black text-base transition-all hover:scale-105 active:scale-95"
+                style={{ background: '#06B6D4', boxShadow: '0 5px 0 #0891B2' }}
               >
                 ▶ 無料で始める
               </Link>
               <Link
                 href="/upgrade"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl border border-slate-700 hover:border-indigo-500/50 text-slate-300 hover:text-white text-sm transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl border border-[#343856] hover:border-indigo-500/50 text-slate-300 hover:text-white text-sm transition-colors"
               >
                 料金プランを見る
               </Link>
@@ -835,7 +875,7 @@ export default function Page() {
       <footer className="relative z-10 border-t border-slate-900 py-8 px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-700">
           <div className="flex items-center gap-2">
-            <span className="text-indigo-500 font-black">◈</span>
+            <span className="text-cyan-500 font-black">◈</span>
             <span className="font-bold">Modelion</span>
             <span>— データを設計して、体験する。</span>
           </div>

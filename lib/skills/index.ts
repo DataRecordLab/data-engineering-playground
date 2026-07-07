@@ -1,12 +1,16 @@
 import { SECTION_PIPELINE } from './section1';
 import { SECTION_QUALITY } from './section2';
 import { SECTION_MODELING } from './section3';
+import { SECTION_TOOLS } from './section4';
+import { SECTION_ARCH } from './section5';
 import type { SkillSection, SkillLesson } from '@/types';
 
 export const ALL_SECTIONS: SkillSection[] = [
   SECTION_PIPELINE,
   SECTION_QUALITY,
   SECTION_MODELING,
+  SECTION_TOOLS,
+  SECTION_ARCH,
 ];
 
 export function getSection(sectionId: string): SkillSection | undefined {

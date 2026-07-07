@@ -19,6 +19,10 @@ export const SECTION_QUALITY: SkillSection = {
       description: 'データ品質の6つの次元と、なぜ重要かを理解する',
       icon: '⚠️',
       xpReward: 30,
+      concept: {
+        title: 'データ品質の6つの次元',
+        body: 'データ品質は6つの視点で評価します。\n\n・完全性（NULLがない）\n・正確性（値が正しい）\n・一貫性（表記統一）\n・適時性（鮮度が保たれている）\n・一意性（重複がない）\n・有効性（フォーマットが正しい）\n\n品質の低いデータから生まれる分析は、誤った意思決定を導きます。',
+      },
       questions: [
         {
           id: 'q1',
@@ -72,6 +76,10 @@ export const SECTION_QUALITY: SkillSection = {
       description: 'NULL の正しい理解と、ビジネスへの影響を学ぶ',
       icon: '🕳️',
       xpReward: 40,
+      concept: {
+        title: 'NULL は「不明」を意味する',
+        body: 'NULL は「値がない」ではなく「不明・未定義」を意味します。\n\nCOALESCE(column, 0) でデフォルト値に置き換えるか、NULLのまま残すかは文脈次第です。集計関数（SUM・AVG）はNULLを無視するため、意図せず結果が変わることがあります。意図を持って扱うことが重要です。',
+      },
       questions: [
         {
           id: 'q1',
@@ -129,6 +137,10 @@ export const SECTION_QUALITY: SkillSection = {
       description: 'CSVデータの型問題を正しく処理する',
       icon: '🔧',
       xpReward: 40,
+      concept: {
+        title: '型の不一致がパイプラインを壊す',
+        body: 'CSVなどの生データは全ての値が VARCHAR（文字列）として届きます。\n\nSTRINGの \'1000\' と NUMERICの 1000 は見た目は同じでも、集計すると全く違う結果になります。Staging Layer で正しい型に変換することで、下流の計算ミスを防げます。',
+      },
       questions: [
         {
           id: 'q1',
@@ -184,6 +196,10 @@ export const SECTION_QUALITY: SkillSection = {
       description: '品質問題を発見するSQLパターンを身につける',
       icon: '✅',
       xpReward: 50,
+      concept: {
+        title: '品質チェックをパイプラインに組み込む',
+        body: 'データ品質の検証は「後から確認」ではなく「パイプラインに自動化」します。\n\nnot_null（NULLチェック）・unique（重複チェック）・accepted_values（値の検証）を各テーブルに設定します。dbt の test 機能はこれを宣言的に管理できます。問題を早期発見することで、ダッシュボードへの誤データ流入を防ぎます。',
+      },
       questions: [
         {
           id: 'q1',

@@ -274,14 +274,14 @@ export default function SkillsPage() {
       }
       setQuestStars(stars);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   const totalLessons = ALL_SECTIONS.reduce((acc, s) => acc + s.lessons.length, 0);
   const completedCount = Object.keys(completed).length;
 
   return (
-    <div className="min-h-screen bg-[#060918] text-white">
+    <div className="min-h-screen bg-[#131525] text-white pb-[72px] lg:pb-0">
 
       {/* ヘッダー */}
       <header className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/90 backdrop-blur-sm">

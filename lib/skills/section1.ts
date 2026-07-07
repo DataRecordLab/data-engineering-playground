@@ -19,6 +19,10 @@ export const SECTION_PIPELINE: SkillSection = {
       description: '生データが意思決定データになるまでの仕組みを理解する',
       icon: '🔄',
       xpReward: 30,
+      concept: {
+        title: 'データを原石から宝石に変える旅',
+        body: '散らばった生データを収集・整形・分析できる状態に変換する仕組みがデータパイプラインです。\n\nSource → Staging → Warehouse → Mart の4層で構成され、上流から下流に向かってデータが変換されていきます。パイプラインがなければ、複数システムのデータを統合した分析は不可能です。',
+      },
       questions: [
         {
           id: 'q1',
@@ -71,6 +75,10 @@ export const SECTION_PIPELINE: SkillSection = {
       description: '各レイヤーの役割と特徴を学ぶ',
       icon: '🏗️',
       xpReward: 40,
+      concept: {
+        title: '各レイヤーの役割と責務',
+        body: '4層それぞれに明確な責務があります。\n\n・Source：生データをそのまま保存（加工禁止）\n・Staging：クレンジング・型変換・表記統一\n・Warehouse：スタースキーマでモデリング\n・Mart：ビジネス用途に特化した集計テーブル\n\n層を混在させないことが設計の基本原則です。',
+      },
       questions: [
         {
           id: 'q1',
@@ -133,6 +141,10 @@ export const SECTION_PIPELINE: SkillSection = {
       description: '現代のデータエンジニアリングはなぜ ELT を選ぶのか',
       icon: '⚡',
       xpReward: 40,
+      concept: {
+        title: 'ETL から ELT へのシフト',
+        body: 'ETL（Extract→Transform→Load）は変換してからDWHに格納する旧来の方式です。\n\nELT（Extract→Load→Transform）はまずDWHに格納し、DWH内で変換します。BigQuery・Snowflakeなどクラウド DWH の処理能力が飛躍的に向上した結果、現代は ELT が主流になりました。',
+      },
       questions: [
         {
           id: 'q1',
@@ -192,6 +204,10 @@ export const SECTION_PIPELINE: SkillSection = {
       description: 'チームで壊れないパイプラインを作るための命名ルール',
       icon: '📋',
       xpReward: 30,
+      concept: {
+        title: 'テーブル名でレイヤーを即座に識別する',
+        body: '命名規則を徹底すると、テーブル名を見ただけでレイヤーが分かります。\n\n・src_ → Source Layer\n・stg_ → Staging Layer\n・fact_ / dim_ → Warehouse Layer\n・mart_ → Mart Layer\n\nチーム全員が同じ規則を使うことで、コードレビューとデバッグが劇的に速くなります。',
+      },
       questions: [
         {
           id: 'q1',
@@ -233,6 +249,10 @@ export const SECTION_PIPELINE: SkillSection = {
       description: '学んだ知識を総まとめ——実践的な判断力を鍛える',
       icon: '🏆',
       xpReward: 60,
+      concept: {
+        title: 'パイプライン設計は意思決定の連続',
+        body: 'どのデータをどのレイヤーで処理するか、依存関係はどうなるか——設計は判断の積み重ねです。\n\n失敗したときに再実行できる冪等性、処理の順序と依存関係、障害時の検知と復旧。これらを考慮して設計することが、実務で使えるデータエンジニアの証です。',
+      },
       questions: [
         {
           id: 'q1',

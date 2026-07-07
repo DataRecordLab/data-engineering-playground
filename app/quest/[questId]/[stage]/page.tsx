@@ -562,7 +562,7 @@ export default function StagePage() {
               </div>
             </div>
             {/* Right: pipeline canvas */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden flex flex-col">
               <QuestPipelineDesigner
                 layers={layers}
                 requiredConnections={requiredConnections}

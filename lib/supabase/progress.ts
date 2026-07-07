@@ -27,9 +27,9 @@ export async function saveStageProgress({
   badgeId?: string;
 }): Promise<{ ok: boolean; newTotalXp: number; newLevel: number }> {
   const supabase = createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    console.error('[saveStageProgress] auth error:', authError);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    // ゲストユーザーは保存しない（サイレント）
     return { ok: false, newTotalXp: 0, newLevel: 1 };
   }
 
