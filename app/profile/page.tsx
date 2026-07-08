@@ -8,6 +8,7 @@ import { calculateSkillScores } from '@/lib/skills/scoring';
 import { ShareCard } from '@/components/profile/ShareCard';
 import { BadgeGrid } from '@/components/badges/BadgeGrid';
 import { StreakBadge } from '@/components/streak/StreakBadge';
+import { SHOP_ITEMS } from '@/lib/shop/items';
 import type { CharacterConfig } from '@/types';
 
 export default function ProfilePage() {
@@ -26,6 +27,7 @@ export default function ProfilePage() {
   );
   const [streakCount, setStreakCount] = useState(0);
   const [badgeIds, setBadgeIds] = useState<string[]>([]);
+  const [purchasedItems, setPurchasedItems] = useState<string[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -47,7 +49,9 @@ export default function ProfilePage() {
         setTotalXp(profile.total_xp ?? 0);
         setStreakCount((profile.streak_count as number | null) ?? 0);
         if (profile.character_config) {
-          setCharacterConfig(profile.character_config as CharacterConfig);
+          const cfg = profile.character_config as CharacterConfig & { purchased_items?: string[] };
+          setCharacterConfig(cfg);
+          setPurchasedItems(Array.isArray(cfg.purchased_items) ? cfg.purchased_items : []);
         }
       }
       setBadgeIds(earnedBadgeIds);
@@ -72,7 +76,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#060918] text-white">
+    <div className="min-h-screen bg-[#131525] text-white">
       {/* ヘッダー */}
       <header className="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-950/80">
         <div className="flex items-center gap-3">
@@ -173,6 +177,41 @@ export default function ProfilePage() {
                 <p className="text-slate-600 text-[10px]">{badgeIds.length} / 12 獲得</p>
               </div>
               <BadgeGrid earnedIds={badgeIds} showAll={true} />
+            </div>
+          </div>
+        )}
+
+        {/* 所持アイテム */}
+        {!loading && purchasedItems.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-slate-500 text-xs font-mono uppercase tracking-wider">所持アイテム</p>
+              <p className="text-slate-600 text-[10px]">{purchasedItems.length} 個</p>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {SHOP_ITEMS.filter(item => purchasedItems.includes(item.id)).map(item => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3"
+                >
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
+                    style={{ background: `${item.color}18` }}
+                  >
+                    {item.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-white leading-snug">{item.name}</p>
+                    <p className="text-[10px] text-slate-500 leading-snug mt-0.5 truncate">{item.desc}</p>
+                  </div>
+                  <span
+                    className="text-[9px] px-2 py-0.5 rounded-full font-bold flex-shrink-0"
+                    style={{ background: `${item.color}18`, border: `1px solid ${item.color}40`, color: item.color }}
+                  >
+                    {item.category === 'powerup' ? 'パワーアップ' : item.category === 'cosmetic' ? 'コスメ' : '称号'}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}
