@@ -25,7 +25,7 @@ export function ProGate({ labName, proFeatures, onClose }: Props) {
       >
         {/* Mio */}
         <div className="flex justify-center mb-4">
-          <MioBadge expression="thinking" scale={4} />
+          <MioBadge expression="thinking" size={64} />
         </div>
 
         <div

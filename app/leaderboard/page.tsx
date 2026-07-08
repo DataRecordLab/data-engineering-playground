@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Sprite } from '@/components/characters/Sprite';
-import { buildPlayerSprite } from '@/components/characters/sprites/playerCustom';
+import { PlayerPortrait } from '@/components/characters/PlayerPortrait';
 import { DEFAULT_CHARACTER_CONFIG } from '@/types';
 import { StreakBadge } from '@/components/streak/StreakBadge';
 import type { CharacterConfig } from '@/types';
@@ -107,7 +106,6 @@ export default async function LeaderboardPage() {
             const rank = i + 1;
             const isMe = me?.id === u.id;
             const config = u.character_config ?? DEFAULT_CHARACTER_CONFIG;
-            const grid = buildPlayerSprite(config);
             const name = u.display_name ?? `Engineer #${rank}`;
 
             return (
@@ -127,11 +125,10 @@ export default async function LeaderboardPage() {
                 </div>
 
                 {/* キャラクター */}
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                <div className="flex-shrink-0 overflow-hidden rounded-xl"
                   style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}
                 >
-                  <Sprite grid={grid} scale={2} />
+                  <PlayerPortrait config={config} size={40} animate={false} />
                 </div>
 
                 {/* 名前 + XPバー */}

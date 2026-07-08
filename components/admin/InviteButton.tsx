@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Props {
   orgId: string;
@@ -10,6 +10,9 @@ interface Props {
 
 export function InviteButton({ orgId, orgName, variant = 'default' }: Props) {
   const [copied, setCopied] = useState(false);
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => { setOrigin(window.location.origin); }, []);
 
   function handleCopy() {
     const url = `${window.location.origin}/signup?team=${orgId}`;
@@ -25,7 +28,7 @@ export function InviteButton({ orgId, orgName, variant = 'default' }: Props) {
         <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 font-mono text-xs text-slate-400 max-w-md w-full">
           <span className="text-slate-600 flex-shrink-0">🔗</span>
           <span className="truncate">
-            {typeof window !== 'undefined' ? window.location.origin : ''}/signup?team={orgId}
+            {origin}/signup?team={orgId}
           </span>
         </div>
         <button

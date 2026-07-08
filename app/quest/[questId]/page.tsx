@@ -16,36 +16,32 @@ function parseCsvPreview(csv: string, maxRows = 3) {
   return { headers, rows, totalRows };
 }
 
-// Dialog lines for ec-site quest
+// Dialog lines per quest — all characters are lions in the Data World
 function buildDialogLines(questId: string): DialogLine[] {
   if (questId === 'ec-site') {
     return [
       {
-        character: 'tamura',
-        expression: 'worried',
+        expression: 'troubled',
         name: '田村 誠',
         role: 'ShopNow CEO',
-        text: 'Modelion Agencyさん、緊急のお願いがあります。先月から売上の集計が全くできていない状態です。',
+        text: 'Modelion データワールドさん、緊急のお願いがあります。先月から売上の集計が全くできていない状態です。',
         side: 'left',
       },
       {
-        character: 'tamura',
-        expression: 'worried',
+        expression: 'troubled',
         name: '田村 誠',
         role: 'ShopNow CEO',
         text: 'Shopifyのデータ、CRMのデータ、在庫システムのデータ——バラバラなシステムにデータが散在していて、集計すると毎回数字が合わない。',
         side: 'left',
       },
       {
-        character: 'tamura',
-        expression: 'worried',
+        expression: 'troubled',
         name: '田村 誠',
         role: 'ShopNow CEO',
         text: '先週の経営会議では「売上が出せない」と言わざるを得ませんでした。来月の経営会議まであと2週間。なんとかしてほしいのです。',
         side: 'left',
       },
       {
-        character: 'tanaka',
         expression: 'neutral',
         name: '田中 貢',
         role: 'Senior Data Engineer',
@@ -53,8 +49,7 @@ function buildDialogLines(questId: string): DialogLine[] {
         side: 'right',
       },
       {
-        character: 'tanaka',
-        expression: 'stern',
+        expression: 'thinking',
         name: '田中 貢',
         role: 'Senior Data Engineer',
         text: 'Source → Staging → Warehouse → Mart。パイプラインを一層ずつ確実に設計する。急ぐな。',
@@ -62,7 +57,40 @@ function buildDialogLines(questId: string): DialogLine[] {
       },
     ];
   }
-  return [];
+  if (questId === 'saas') {
+    return [
+      {
+        expression: 'surprised',
+        name: '鈴木 陽菜',
+        role: 'Nimbus CEO',
+        text: 'MRRの数字が経営陣と営業で毎月違うんです。誰も同じ数字を持っていない。投資家に報告できる状態じゃない。',
+        side: 'left',
+      },
+      {
+        expression: 'thinking',
+        name: '田中 貢',
+        role: 'Senior Data Engineer',
+        text: 'SaaSのMRR計算は、サブスク履歴をどう集計するかがすべてだ。まずはSourceを見ろ。',
+        side: 'right',
+      },
+      {
+        expression: 'happy',
+        name: 'Lio',
+        role: 'あなたの相棒',
+        text: 'やってみよう！SaaS分析基盤の設計、一緒に完成させようね！',
+        side: 'right',
+      },
+    ];
+  }
+  return [
+    {
+      expression: 'excited',
+      name: 'Lio',
+      role: 'あなたの相棒',
+      text: 'このクエストを一緒にクリアしよう！データパイプラインを設計して、価値あるデータ基盤を完成させるよ！',
+      side: 'right',
+    },
+  ];
 }
 
 export default function QuestOpeningPage() {
@@ -112,7 +140,7 @@ export default function QuestOpeningPage() {
           <span className="text-slate-400 text-sm">{quest.clientName}</span>
         </header>
 
-        <main className={`max-w-4xl mx-auto px-8 py-10 space-y-8 transition-opacity duration-500 ${showDialog && !dialogDone ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+        <main className={`max-w-4xl mx-auto px-4 sm:px-8 py-6 sm:py-10 pb-[88px] lg:pb-10 space-y-8 transition-opacity duration-500 ${showDialog && !dialogDone ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
           {/* Quest intro badge */}
           <div>
             <span className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">
@@ -180,7 +208,7 @@ export default function QuestOpeningPage() {
 
           {/* CTA */}
           <div className="pt-6 border-t border-slate-800 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Canvas Mode — new unified experience */}
               <Link
                 href={`/pipeline/${questId}`}

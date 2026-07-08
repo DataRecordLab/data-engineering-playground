@@ -108,7 +108,7 @@ SQL実行        : DuckDB WASM（ブラウザ内・サーバー不要）
 SQLエディタ    : Monaco Editor（SQLは手段として補助的に使用）
 状態管理       : Zustand
 認証・DB       : Supabase
-AIフィードバック: Claude API (claude-sonnet-4-6)
+AIフィードバック: Gemini API (gemini-2.5-flash)
 デプロイ       : Vercel
 ```
 
@@ -169,7 +169,7 @@ lib/
 │       ├── data/                       ← サンプルCSVデータ
 │       └── stages/                     ← 各ステージ定義
 └── ai/
-    └── feedback.ts                     ← Claude API フィードバック生成
+    └── feedback.ts                     ← Gemini API フィードバック生成
 
 types/
 └── index.ts                            ← 共通型定義

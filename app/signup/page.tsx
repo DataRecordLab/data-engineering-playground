@@ -48,6 +48,7 @@ function SignupForm() {
       setLoading(false);
       return;
     }
+    router.refresh();
     router.push('/onboarding');
   }
 

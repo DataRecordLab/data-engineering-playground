@@ -119,57 +119,60 @@ export interface ValidationRule {
 }
 
 // Character Customization
+// ライオンベースのキャラクター。全プレイヤーは Lio と同じ世界に生きるライオン。
 
-export type HairStyle = 'short' | 'flat' | 'spiky' | 'long';
 export type OutfitStyle = 'hoodie' | 'tee' | 'jacket' | 'suit';
-export type GlassesStyle = 'round' | 'square' | 'none';
 export type JobTitle = 'Data Engineer' | 'Analytics Engineer' | 'Data Scientist' | 'Data Architect';
 
 export interface CharacterConfig {
-  skinTone: string;
-  hairStyle: HairStyle;
-  hairColor: string;
-  outfitStyle: OutfitStyle;
-  outfitColor: string;
-  hasGlasses: boolean;
+  hairColor:   string;      // ライオンのたてがみ色（#92400E など）
+  outfitStyle: OutfitStyle; // パーカー / Tシャツ / ジャケット / スーツ
+  outfitColor: string;      // 衣装のアクセントカラー・ロゴ色
+  hasGlasses:  boolean;
   glassesColor: string;
-  jobTitle: JobTitle;
+  jobTitle:    JobTitle;
+  // Supabase 後方互換フィールド（旧humanoid設定の読み捨て用）
+  skinTone?:   string;
+  hairStyle?:  string;
+  purchased_items?: string[];
 }
 
 export const DEFAULT_CHARACTER_CONFIG: CharacterConfig = {
-  skinTone: '#F5CBA7',
-  hairStyle: 'short',
-  hairColor: '#2C1A0E',
-  outfitStyle: 'hoodie',
-  outfitColor: '#4A90D9',
-  hasGlasses: false,
+  hairColor:    '#92400E',
+  outfitStyle:  'hoodie',
+  outfitColor:  '#2563EB',
+  hasGlasses:   false,
   glassesColor: '#93C5FD',
-  jobTitle: 'Data Engineer',
+  jobTitle:     'Data Engineer',
 };
 
 export const PRESET_CHARACTERS: { name: string; config: CharacterConfig }[] = [
   {
-    name: 'Classic Engineer',
+    name: 'Classic Lion',
     config: {
-      skinTone: '#F5CBA7', hairStyle: 'short', hairColor: '#2C1A0E',
-      outfitStyle: 'hoodie', outfitColor: '#4A90D9',
+      hairColor: '#92400E', outfitStyle: 'hoodie', outfitColor: '#2563EB',
       hasGlasses: false, glassesColor: '#93C5FD', jobTitle: 'Data Engineer',
     },
   },
   {
-    name: 'Night Hacker',
+    name: 'Night Hunter',
     config: {
-      skinTone: '#8D5524', hairStyle: 'spiky', hairColor: '#E5E7EB',
-      outfitStyle: 'hoodie', outfitColor: '#1F2937',
+      hairColor: '#1C0A00', outfitStyle: 'jacket', outfitColor: '#4338CA',
       hasGlasses: true, glassesColor: '#6EE7B7', jobTitle: 'Data Engineer',
     },
   },
   {
     name: 'Data Scientist',
     config: {
-      skinTone: '#FDDCB0', hairStyle: 'flat', hairColor: '#92400E',
-      outfitStyle: 'jacket', outfitColor: '#065F46',
+      hairColor: '#B45309', outfitStyle: 'tee', outfitColor: '#059669',
       hasGlasses: true, glassesColor: '#93C5FD', jobTitle: 'Data Scientist',
+    },
+  },
+  {
+    name: 'Architect',
+    config: {
+      hairColor: '#6B4226', outfitStyle: 'suit', outfitColor: '#7C3AED',
+      hasGlasses: false, glassesColor: '#93C5FD', jobTitle: 'Data Architect',
     },
   },
 ];
@@ -216,6 +219,10 @@ export interface SkillLesson {
   description: string;
   icon: string;
   xpReward: number;
+  concept?: {
+    title: string;
+    body: string;
+  };
   questions: SkillQuestion[];
 }
 

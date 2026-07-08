@@ -71,7 +71,7 @@ export default function PipelineCanvasPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#060918] text-white overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#131525] text-white overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/60 bg-slate-950/90 flex-shrink-0">
         <div className="flex items-center gap-3">

@@ -2,7 +2,10 @@
 // All NPCs (Tanaka, Tamura) use hardcoded color constants.
 // Only the player sprite uses this dynamic generator.
 
-import type { CharacterConfig, HairStyle, OutfitStyle } from '@/types';
+import type { CharacterConfig, OutfitStyle } from '@/types';
+
+// Legacy type kept for internal use — removed from public types since players are now lions
+type HairStyle = 'short' | 'flat' | 'spiky' | 'long';
 
 type PixelRow = (string | null)[];
 type PixelGrid = PixelRow[];
@@ -134,9 +137,14 @@ function lighten(hex: string): string {
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 export function buildPlayerSprite(config: CharacterConfig): PixelGrid {
+  const hairColor   = config.hairColor   ?? '#2C1A0E';
+  const hairStyle   = (config.hairStyle  ?? 'short') as HairStyle;
+  const skinTone    = config.skinTone    ?? '#F5CBA7';
+  const outfitColor = config.outfitColor ?? '#2563EB';
+  const outfitStyle = config.outfitStyle ?? 'hoodie';
   return [
-    ...hairRows(config.hairColor, config.hairStyle),
-    ...faceRows(config.skinTone, config.hasGlasses, config.glassesColor),
-    ...bodyRows(config.outfitColor, config.outfitStyle, config.skinTone),
+    ...hairRows(hairColor, hairStyle),
+    ...faceRows(skinTone, config.hasGlasses, config.glassesColor),
+    ...bodyRows(outfitColor, outfitStyle, skinTone),
   ];
 }

@@ -35,7 +35,7 @@ export default async function PublicProfilePage({ params }: Props) {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#060918] flex items-center justify-center text-white">
+      <div className="min-h-screen bg-[#131525] flex items-center justify-center text-white">
         <div className="text-center space-y-4">
           <p className="text-4xl">👤</p>
           <p className="text-slate-400">プロフィールが見つかりません</p>
@@ -60,7 +60,7 @@ export default async function PublicProfilePage({ params }: Props) {
   const characterConfig = profile.character_config as CharacterConfig | null;
 
   return (
-    <div className="min-h-screen bg-[#060918] text-white">
+    <div className="min-h-screen bg-[#131525] text-white">
       {/* ヘッダー */}
       <header className="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-950/80">
         <div className="flex items-center gap-2">

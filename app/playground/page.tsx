@@ -8,8 +8,7 @@ import { SourceStage } from '@/components/stage/SourceStage';
 import { GameOverOverlay } from '@/components/stage/GameOverOverlay';
 import { useGameStore } from '@/lib/store/gameStore';
 import { DEFAULT_CHARACTER_CONFIG } from '@/types';
-import { buildPlayerSprite } from '@/components/characters/sprites/playerCustom';
-import { Sprite } from '@/components/characters/Sprite';
+import { PlayerPortrait } from '@/components/characters/PlayerPortrait';
 
 // ── 型 ──────────────────────────────────────────────────────────────
 
@@ -44,7 +43,6 @@ function MiniWorldBar({ phase }: { phase: Phase }) {
     { id: 'warehouse', label: '火山', sky: '#140400', accent: '#F87171', locked: true },
     { id: 'mart', label: '城', sky: '#080418', accent: '#FCD34D', locked: true },
   ];
-  const charGrid = buildPlayerSprite(DEFAULT_CHARACTER_CONFIG);
   return (
     <div className="flex border-b border-slate-900 relative" style={{ height: 64 }}>
       {zones.map((z, i) => (
@@ -58,8 +56,8 @@ function MiniWorldBar({ phase }: { phase: Phase }) {
           }}
         >
           {z.current && !z.locked && (
-            <div className="absolute bottom-5" style={{ transform: 'translateX(-50%)', left: '50%' }}>
-              <Sprite grid={charGrid} scale={2} className="animate-[idle-bob_2s_ease-in-out_infinite]" />
+            <div className="absolute bottom-1" style={{ transform: 'translateX(-50%)', left: '50%' }}>
+              <PlayerPortrait config={DEFAULT_CHARACTER_CONFIG} size={20} animate />
             </div>
           )}
           <span className="text-[7px] font-mono font-bold relative z-10" style={{ color: z.current ? z.accent : '#1e3a5f' }}>

@@ -96,6 +96,23 @@ export default function ProfilePage() {
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-black">あなたのスキルカード</h1>
           <p className="text-slate-500 text-sm">URLをシェアして、データエンジニアリングスキルを証明しよう</p>
+          {!loading && (() => {
+            const TITLE_ITEMS = [
+              { id: 'title_architect', label: 'データアーキテクト', color: '#FCD34D', icon: '🏛️' },
+              { id: 'title_wizard',    label: 'データウィザード',   color: '#A78BFA', icon: '🧙' },
+              { id: 'title_pipeline', label: 'パイプライン職人',   color: '#818CF8', icon: '🔧' },
+            ];
+            const active = TITLE_ITEMS.find(t => purchasedItems.includes(t.id));
+            if (!active) return null;
+            return (
+              <span
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black"
+                style={{ background: `${active.color}18`, border: `1px solid ${active.color}40`, color: active.color }}
+              >
+                {active.icon} {active.label}
+              </span>
+            );
+          })()}
         </div>
 
         {/* カード */}

@@ -5,7 +5,7 @@ import { DbtSimulatorWithProvider } from '@/components/dbt/DbtSimulatorLazy';
 
 export default function DbtPage() {
   return (
-    <div className="flex flex-col h-screen bg-[#060918] text-white overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#131525] text-white overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/80 flex-shrink-0 bg-slate-950/90 backdrop-blur">
         <div className="flex items-center gap-3">

@@ -202,18 +202,20 @@ function FillBlankCard({ q, onAnswer }: { q: FillBlankQuestion; onAnswer: (corre
 
 // ── メインプレイヤー ──────────────────────────────────────────────────
 
-type Phase = 'question' | 'feedback' | 'complete';
+type Phase = 'intro' | 'question' | 'feedback';
 
 interface Props {
   lesson: SkillLesson;
   onComplete: (xpEarned: number, correctCount: number) => void;
+  hintUnlocked?: boolean;
 }
 
-export function LessonPlayer({ lesson, onComplete }: Props) {
+export function LessonPlayer({ lesson, onComplete, hintUnlocked = false }: Props) {
   const [qIdx, setQIdx] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
-  const [phase, setPhase] = useState<Phase>('question');
+  const [phase, setPhase] = useState<Phase>(lesson.concept ? 'intro' : 'question');
   const [lastCorrect, setLastCorrect] = useState(false);
+  const [showHint, setShowHint] = useState(false);
 
   const { loseHp, triggerJump } = useGameStore();
 
@@ -248,56 +250,112 @@ export function LessonPlayer({ lesson, onComplete }: Props) {
       <div className="h-2 bg-slate-900 flex-shrink-0">
         <div
           className="h-full bg-indigo-500 transition-all duration-500 rounded-r-full"
-          style={{ width: `${progress * 100}%` }}
+          style={{ width: `${phase === 'intro' ? 0 : progress * 100}%` }}
         />
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-xl mx-auto px-5 py-8 space-y-6">
+        <div className="max-w-xl mx-auto px-5 py-8">
 
-          {/* 問題番号 */}
-          <div className="flex items-center justify-between">
-            <span className="text-slate-600 text-xs font-mono">{qIdx + 1} / {total}</span>
-            <span className="text-slate-600 text-xs">{QUESTION_TYPE_LABEL[q.type]}</span>
-          </div>
+          {/* ── コンセプトカード（Progate風） ── */}
+          {phase === 'intro' && lesson.concept && (
+            <div className="flex flex-col gap-6 animate-slide-up">
+              <div className="text-center">
+                <span className="text-5xl">{lesson.icon}</span>
+                <p className="text-slate-500 text-xs font-mono uppercase tracking-widest mt-3 mb-1">このレッスンで学ぶこと</p>
+                <h2 className="text-white font-black text-xl">{lesson.concept.title}</h2>
+              </div>
 
-          {/* 問題文 */}
-          <div className="rounded-2xl bg-slate-900/60 border border-slate-800 px-5 py-5">
-            <p className="text-white font-semibold text-base leading-relaxed">{q.question}</p>
-          </div>
-
-          {/* 選択肢 */}
-          {phase === 'question' && (
-            <>
-              {q.type === 'multiple_choice' && <MultipleChoiceCard q={q as MultipleChoiceQuestion} onAnswer={handleAnswer} />}
-              {q.type === 'true_false' && <TrueFalseCard q={q as TrueFalseQuestion} onAnswer={handleAnswer} />}
-              {q.type === 'ordering' && <OrderingCard q={q as OrderingQuestion} onAnswer={handleAnswer} />}
-              {q.type === 'fill_blank' && <FillBlankCard key={qIdx} q={q as FillBlankQuestion} onAnswer={handleAnswer} />}
-            </>
-          )}
-
-          {/* フィードバック */}
-          {phase === 'feedback' && (
-            <div className="space-y-4">
               <div
-                className={`rounded-xl border px-5 py-4 ${
-                  lastCorrect
-                    ? 'bg-green-500/10 border-green-500/30'
-                    : 'bg-red-500/10 border-red-500/30'
-                }`}
+                className="rounded-2xl border px-6 py-5 space-y-3"
+                style={{ background: 'rgba(15,23,42,0.8)', borderColor: 'rgba(99,102,241,0.25)' }}
               >
-                <p className={`font-bold text-sm mb-1 ${lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
-                  {lastCorrect ? '✓ 正解！' : '✗ 不正解'}
+                <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-line">
+                  {lesson.concept.body}
                 </p>
-                <p className="text-slate-300 text-sm leading-relaxed">{q.explanation}</p>
               </div>
 
               <button
-                onClick={next}
-                className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition-colors"
+                onClick={() => setPhase('question')}
+                className="w-full py-4 rounded-2xl font-black text-white text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{ background: '#4F46E5', boxShadow: '0 5px 0 #3730A3' }}
               >
-                {qIdx + 1 >= total ? '結果を見る →' : '次の問題 →'}
+                わかった！問題を解く →
               </button>
+            </div>
+          )}
+
+          {/* ── 問題 ── */}
+          {(phase === 'question' || phase === 'feedback') && (
+            <div className="space-y-6">
+              {/* 問題番号 */}
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 text-xs font-mono">{qIdx + 1} / {total}</span>
+                <span className="text-slate-600 text-xs">{QUESTION_TYPE_LABEL[q.type]}</span>
+              </div>
+
+              {/* 問題文 */}
+              <div className="rounded-2xl bg-slate-900/60 border border-slate-800 px-5 py-5">
+                <p className="text-white font-semibold text-base leading-relaxed">{q.question}</p>
+              </div>
+
+              {/* ヒントアンロック */}
+              {phase === 'question' && hintUnlocked && lesson.concept && (
+                <div>
+                  {!showHint ? (
+                    <button
+                      onClick={() => setShowHint(true)}
+                      className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/60 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      💡 ヒントを見る
+                    </button>
+                  ) : (
+                    <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-4 py-3">
+                      <p className="text-emerald-400 text-[10px] font-mono uppercase tracking-wider mb-1.5">💡 ヒント</p>
+                      <p className="text-slate-300 text-xs leading-relaxed">{lesson.concept.body}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 選択肢 */}
+              {phase === 'question' && (
+                <>
+                  {q.type === 'multiple_choice' && <MultipleChoiceCard q={q as MultipleChoiceQuestion} onAnswer={handleAnswer} />}
+                  {q.type === 'true_false' && <TrueFalseCard q={q as TrueFalseQuestion} onAnswer={handleAnswer} />}
+                  {q.type === 'ordering' && <OrderingCard q={q as OrderingQuestion} onAnswer={handleAnswer} />}
+                  {q.type === 'fill_blank' && <FillBlankCard key={qIdx} q={q as FillBlankQuestion} onAnswer={handleAnswer} />}
+                </>
+              )}
+
+              {/* フィードバック + 解説 */}
+              {phase === 'feedback' && (
+                <div className="space-y-4 animate-slide-up">
+                  <div
+                    className={`rounded-2xl border px-5 py-4 ${
+                      lastCorrect
+                        ? 'bg-green-500/10 border-green-500/30'
+                        : 'bg-red-500/10 border-red-500/30'
+                    }`}
+                  >
+                    <p className={`font-black text-sm mb-2 ${lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                      {lastCorrect ? '✓ 正解！' : '✗ 不正解'}
+                    </p>
+                    <p className="text-slate-300 text-sm leading-relaxed">{q.explanation}</p>
+                  </div>
+
+                  <button
+                    onClick={next}
+                    className="w-full py-3.5 rounded-2xl font-black text-white text-sm transition-all hover:scale-[1.01] active:scale-[0.99]"
+                    style={lastCorrect
+                      ? { background: '#059669', boxShadow: '0 4px 0 #047857' }
+                      : { background: '#4F46E5', boxShadow: '0 4px 0 #3730A3' }
+                    }
+                  >
+                    {qIdx + 1 >= total ? '結果を見る →' : '次の問題 →'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

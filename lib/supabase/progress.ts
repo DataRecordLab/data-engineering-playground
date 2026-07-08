@@ -39,6 +39,29 @@ export async function saveStageProgress({
     { onConflict: 'id', ignoreDuplicates: true }
   );
 
+  // XPブーストアイテムチェック
+  const { data: userCfgRow } = await supabase
+    .from('users')
+    .select('character_config')
+    .eq('id', user.id)
+    .single();
+  const cfg = (userCfgRow?.character_config ?? {}) as Record<string, unknown>;
+  const purchasedItems: string[] = Array.isArray(cfg.purchased_items)
+    ? (cfg.purchased_items as string[])
+    : [];
+  if (purchasedItems.includes('xp_boost')) {
+    xpEarned = xpEarned * 2;
+    await supabase
+      .from('users')
+      .update({
+        character_config: {
+          ...cfg,
+          purchased_items: purchasedItems.filter(id => id !== 'xp_boost'),
+        },
+      })
+      .eq('id', user.id);
+  }
+
   const { error: upsertError } = await supabase.from('user_progress').upsert(
     {
       user_id: user.id,
@@ -131,11 +154,18 @@ export async function checkAiFeedbackLimit(): Promise<boolean> {
 
   const { data: profile } = await supabase
     .from('users')
-    .select('plan')
+    .select('plan, character_config')
     .eq('id', user.id)
     .single();
 
   if (profile?.plan === 'pro') return true;
+
+  const cfg = (profile?.character_config ?? {}) as Record<string, unknown>;
+  const purchasedItems: string[] = Array.isArray(cfg.purchased_items)
+    ? (cfg.purchased_items as string[])
+    : [];
+  const hasExtra = purchasedItems.includes('ai_feedback_x3');
+  const limit = hasExtra ? 6 : 3;
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count } = await supabase
@@ -144,7 +174,22 @@ export async function checkAiFeedbackLimit(): Promise<boolean> {
     .eq('user_id', user.id)
     .gte('used_at', since);
 
-  return (count ?? 0) < 3;
+  const usedCount = count ?? 0;
+
+  // 通常上限（3回）を超えてアイテムを初めて使う → アイテム消費
+  if (usedCount >= 3 && hasExtra && usedCount < 6) {
+    await supabase
+      .from('users')
+      .update({
+        character_config: {
+          ...cfg,
+          purchased_items: purchasedItems.filter(id => id !== 'ai_feedback_x3'),
+        },
+      })
+      .eq('id', user.id);
+  }
+
+  return usedCount < limit;
 }
 
 export async function recordAiFeedbackUsage(questId: string, stageId: string) {

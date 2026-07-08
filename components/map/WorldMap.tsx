@@ -2,8 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sprite } from '@/components/characters/Sprite';
-import { buildPlayerSprite } from '@/components/characters/sprites/playerCustom';
+import { PlayerPortrait } from '@/components/characters/PlayerPortrait';
 import { useGameStore } from '@/lib/store/gameStore';
 import { createClient } from '@/lib/supabase/client';
 import type { CharacterConfig } from '@/types';
@@ -443,11 +442,10 @@ function HQBuilding({ cx, cy }: { cx: number; cy: number }) {
 }
 
 function PlayerSprite({ isWalking, config }: { isWalking: boolean; config: CharacterConfig }) {
-  const grid = buildPlayerSprite(config);
   return (
-    <g className={isWalking ? 'animate-player-walk' : 'animate-idle-bob'}>
-      <Sprite grid={grid} scale={4} />
-    </g>
+    <foreignObject x="-30" y="-75" width="60" height="75">
+      <PlayerPortrait config={config} size={48} animate={!isWalking} className={isWalking ? 'animate-player-walk' : ''} />
+    </foreignObject>
   );
 }
 

@@ -1,8 +1,7 @@
 'use client';
 
 import { RadarChart } from './RadarChart';
-import { Sprite } from '@/components/characters/Sprite';
-import { buildPlayerSprite } from '@/components/characters/sprites/playerCustom';
+import { PlayerPortrait } from '@/components/characters/PlayerPortrait';
 import { DEFAULT_CHARACTER_CONFIG } from '@/types';
 import type { SkillDimension } from '@/lib/skills/scoring';
 import type { CharacterConfig } from '@/types';
@@ -29,7 +28,6 @@ export function ShareCard({
   jobTitle,
 }: Props) {
   const config = characterConfig ?? DEFAULT_CHARACTER_CONFIG;
-  const grid = buildPlayerSprite(config);
   const xpInLevel = totalXp % 500;
   const xpPercent = (xpInLevel / 500) * 100;
 
@@ -61,13 +59,10 @@ export function ShareCard({
       {/* ヘッダー */}
       <div className="relative px-5 pt-5 pb-4 flex items-center gap-4 border-b border-indigo-900/30">
         {/* キャラクター */}
-        <div className="flex-shrink-0">
-          <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}
-          >
-            <Sprite grid={grid} scale={3} />
-          </div>
+        <div className="flex-shrink-0 rounded-xl overflow-hidden"
+          style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}
+        >
+          <PlayerPortrait config={config} size={56} animate={false} />
         </div>
 
         {/* ユーザー情報 */}

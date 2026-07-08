@@ -93,7 +93,7 @@ export default function DebugPage() {
   const intermediateCount = ALL_DEBUG_SCENARIOS.filter(s => s.difficulty === 'intermediate').length;
 
   return (
-    <div className="min-h-screen bg-[#070910] text-white">
+    <div className="min-h-screen bg-[#070910] text-white pb-[72px] lg:pb-0">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-3 border-b border-slate-800/60 bg-slate-950/80">
         <div className="flex items-center gap-3">
@@ -129,7 +129,7 @@ export default function DebugPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { value: ALL_DEBUG_SCENARIOS.length, label: 'シナリオ', icon: '📋' },
               { value: categories.length, label: 'カテゴリ', icon: '🏷️' },
@@ -145,7 +145,7 @@ export default function DebugPage() {
           </div>
 
           {/* How it works */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { icon: '🚨', step: '01', label: 'アラート受信', desc: 'クライアントから緊急連絡が届く' },
               { icon: '🔍', step: '02', label: 'SQLで調査', desc: 'DuckDBで実際にクエリして原因を特定' },

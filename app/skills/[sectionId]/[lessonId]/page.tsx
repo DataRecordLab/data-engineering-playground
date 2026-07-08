@@ -38,6 +38,19 @@ export default function LessonPage() {
   const [gameOver, setGameOver] = useState(false);
   const [earnedXp, setEarnedXp] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
+  const [hintUnlocked, setHintUnlocked] = useState(false);
+
+  // ヒントアンロックチェック
+  useEffect(() => {
+    fetch('/api/user/me')
+      .then(r => r.json())
+      .then((d: { purchasedItems?: string[] }) => {
+        if (Array.isArray(d.purchasedItems) && d.purchasedItems.includes('hint_unlock')) {
+          setHintUnlocked(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // HP初期化
   useEffect(() => { recoverAll(); }, [recoverAll]);
@@ -97,17 +110,15 @@ export default function LessonPage() {
     <div className="flex flex-col h-screen bg-[#080918] text-white">
 
       {/* ヘッダー */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800 flex-shrink-0 bg-slate-950/80">
-        <div className="flex items-center gap-3">
-          <Link href="/skills" className="text-slate-600 hover:text-slate-400 transition-colors">
-            <span className="text-lg">✕</span>
-          </Link>
-          <div className="flex-1 h-2 w-48 rounded-full bg-slate-800 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-indigo-500 transition-all"
-              style={{ width: phase === 'complete' ? '100%' : '0%' }}
-            />
-          </div>
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-slate-800 flex-shrink-0 bg-slate-950/80">
+        <Link href="/skills" className="text-slate-600 hover:text-slate-400 transition-colors flex-shrink-0">
+          <span className="text-lg">✕</span>
+        </Link>
+        <div className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-indigo-500 transition-all duration-500"
+            style={{ width: phase === 'complete' ? '100%' : '0%' }}
+          />
         </div>
         <HpHearts hp={hp} maxHp={maxHp} />
       </header>
@@ -123,7 +134,7 @@ export default function LessonPage() {
       {/* メイン */}
       <div className="flex-1 overflow-hidden">
         {phase === 'play' && (
-          <LessonPlayer lesson={lesson} onComplete={handleComplete} />
+          <LessonPlayer lesson={lesson} onComplete={handleComplete} hintUnlocked={hintUnlocked} />
         )}
 
         {phase === 'complete' && (

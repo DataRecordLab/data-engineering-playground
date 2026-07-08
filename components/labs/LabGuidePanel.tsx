@@ -56,7 +56,7 @@ export function LabGuidePanel({ steps, currentStep, onNext, onShowPro, isVisible
         {/* キャラクター + メッセージ */}
         <div className="flex items-end gap-3 mb-3">
           <div className="flex-shrink-0" style={{ animation: 'idle-bob 2s ease-in-out infinite' }}>
-            <MioBadge expression={expression} scale={3} />
+            <MioBadge expression={expression} size={48} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-mono font-bold text-indigo-400 mb-1">{step.title}</p>

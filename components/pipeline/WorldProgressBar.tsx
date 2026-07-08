@@ -2,8 +2,7 @@
 
 import { useEffect } from 'react';
 import { useGameStore } from '@/lib/store/gameStore';
-import { buildPlayerSprite } from '@/components/characters/sprites/playerCustom';
-import { Sprite } from '@/components/characters/Sprite';
+import { PlayerPortrait } from '@/components/characters/PlayerPortrait';
 import { DEFAULT_CHARACTER_CONFIG } from '@/types';
 import type { CharacterConfig } from '@/types';
 
@@ -189,14 +188,13 @@ function DecoCastle() {
 // ── Player sprite using custom CharacterConfig ───────────────────────
 
 function PlayerSprite({ config, anim }: { config: CharacterConfig; anim: 'idle' | 'jump' | 'damage' }) {
-  const grid = buildPlayerSprite(config);
   const cls =
     anim === 'jump'
       ? 'animate-[player-jump_0.5s_ease-out_forwards]'
       : anim === 'damage'
       ? 'animate-[player-damage_0.45s_ease-in-out_forwards]'
-      : 'animate-[idle-bob_2s_ease-in-out_infinite]';
-  return <Sprite grid={grid} scale={3} className={cls} />;
+      : '';
+  return <PlayerPortrait config={config} size={36} animate={anim === 'idle'} className={cls} />;
 }
 
 // ── Main component ───────────────────────────────────────────────────
