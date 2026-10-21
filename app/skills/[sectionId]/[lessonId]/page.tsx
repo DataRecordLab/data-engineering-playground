@@ -9,6 +9,9 @@ import { GameOverOverlay } from '@/components/stage/GameOverOverlay';
 import { useGameStore } from '@/lib/store/gameStore';
 import { saveSkillProgress } from '@/lib/supabase/progress';
 import { completeDailyMission } from '@/lib/daily/missions';
+import { starsFor, understandingRate } from '@/lib/skills/grading';
+import { ShareOnXButton } from '@/components/share/ShareOnXButton';
+import type { LessonResult } from '@/types';
 
 type Phase = 'play' | 'complete';
 
@@ -37,7 +40,7 @@ export default function LessonPage() {
   const [phase, setPhase] = useState<Phase>('play');
   const [gameOver, setGameOver] = useState(false);
   const [earnedXp, setEarnedXp] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [lessonResult, setLessonResult] = useState<LessonResult | null>(null);
   const [hintUnlocked, setHintUnlocked] = useState(false);
 
   // ヒントアンロックチェック
@@ -69,11 +72,10 @@ export default function LessonPage() {
     }
   }, [hp, damageFlash, gameOver, phase]);
 
-  async function handleComplete(xp: number, correct: number) {
+  async function handleComplete(xp: number, res: LessonResult) {
     setEarnedXp(xp);
-    setCorrectCount(correct);
-    const total = result?.lesson.questions.length ?? 1;
-    const stars = correct >= total ? 3 : correct >= Math.ceil(total * 0.7) ? 2 : 1;
+    setLessonResult(res);
+    const stars = starsFor(res);
     await saveSkillProgress({ sectionId, lessonId, xpEarned: xp, stars });
     completeDailyMission('skill_lesson');
     setPhase('complete');
@@ -99,8 +101,8 @@ export default function LessonPage() {
   }
 
   const { section, lesson } = result;
-  const totalQuestions = lesson.questions.length;
-  const starCount = correctCount >= totalQuestions ? 3 : correctCount >= Math.ceil(totalQuestions * 0.7) ? 2 : 1;
+  const starCount = lessonResult ? starsFor(lessonResult) : 1;
+  const understanding = lessonResult ? Math.round(understandingRate(lessonResult) * 100) : 0;
 
   // 次のレッスン
   const nextLesson = section.lessons[lessonIdx + 1];
@@ -165,10 +167,34 @@ export default function LessonPage() {
                   <p className="text-slate-500 text-xs mt-1">XP 獲得</p>
                 </div>
                 <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
-                  <p className="text-green-400 text-2xl font-black">{correctCount}/{totalQuestions}</p>
-                  <p className="text-slate-500 text-xs mt-1">正解数</p>
+                  <p className="text-green-400 text-2xl font-black">{understanding}%</p>
+                  <p className="text-slate-500 text-xs mt-1">理解度</p>
                 </div>
               </div>
+
+              {/* 理解度の内訳（勘の正解・思い込みを可視化） */}
+              {lessonResult && (
+                <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-left space-y-2">
+                  {([
+                    ['💡 理解して正解', lessonResult.mastered, 'text-green-400'],
+                    ['🎲 勘で正解', lessonResult.lucky, 'text-amber-400'],
+                    ['⚠️ 思い込み（自信あり不正解）', lessonResult.misconception, 'text-red-400'],
+                    ['❓ わからなかった', lessonResult.unknown, 'text-slate-400'],
+                  ] as const).map(([label, n, color]) => (
+                    <div key={label} className="flex items-center justify-between text-sm">
+                      <span className="text-slate-400">{label}</span>
+                      <span className={`font-black font-mono ${color}`}>{n} / {lessonResult.total}</span>
+                    </div>
+                  ))}
+                  {starCount < 3 && (
+                    <p className="text-slate-500 text-xs pt-2 border-t border-slate-800 leading-relaxed">
+                      ★3 は全問を「理由まで説明できる」で正解したときに獲得できます。もう一度挑戦してみましょう。
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <ShareOnXButton kind="skill" id={sectionId} query={{ lesson: lessonId, stars: String(starCount) }} />
 
               {/* Quest アップセル */}
               {section.upsell && (

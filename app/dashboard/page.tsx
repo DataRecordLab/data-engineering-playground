@@ -278,6 +278,7 @@ export default async function DashboardPage() {
           <div className="flex-1 overflow-y-auto flex flex-col min-h-0 py-2">
 
             {/* ── Main nav items ── */}
+            <DuoNavItem href="/roadmap"     icon="🗺️" label="ロードマップ" />
             <DuoNavItem href="/skills"      icon="📚" label="スキルパス" />
             <DuoNavItem href="/debug"       icon="🚨" label="Debug Lab" />
             <DuoNavItem href="/leaderboard" icon="🏆" label="ランキング" />

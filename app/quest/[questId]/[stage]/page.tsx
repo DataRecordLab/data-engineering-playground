@@ -491,6 +491,7 @@ export default function StagePage() {
             nextLabel={isLastStage ? 'クエスト完了！ → ダッシュボードへ' : `次へ: ${nextStage?.title} →`}
             onNext={handleNext}
             labHints={getLabHints(questId, stageId)}
+            share={{ kind: 'quest', id: questId, query: { stage: stageId, stars: String(completion.stars) } }}
             isGuest={isGuest}
           />
         )}
@@ -623,6 +624,7 @@ export default function StagePage() {
           nextLabel={isLastStage ? 'クエスト完了！ → ダッシュボードへ' : `次へ: ${nextStage?.title} →`}
           onNext={handleNext}
           labHints={getLabHints(questId, stageId)}
+            share={{ kind: 'quest', id: questId, query: { stage: stageId, stars: String(completion.stars) } }}
         />
       )}
 

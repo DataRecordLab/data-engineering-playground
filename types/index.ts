@@ -213,6 +213,18 @@ export interface FillBlankQuestion extends BaseQuestion {
 
 export type SkillQuestion = MultipleChoiceQuestion | TrueFalseQuestion | OrderingQuestion | FillBlankQuestion;
 
+// 初回回答の「正誤 × 自信」で理解度を判定する（当てずっぽう対策）
+// mastered: 自信あり正解 / lucky: 自信なし正解 / misconception: 自信あり不正解 / unknown: 自信なし不正解
+export type AnswerOutcome = 'mastered' | 'lucky' | 'misconception' | 'unknown';
+
+export interface LessonResult {
+  total: number;
+  mastered: number;
+  lucky: number;
+  misconception: number;
+  unknown: number;
+}
+
 export interface SkillLesson {
   id: string;
   title: string;

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ShareOnXButton } from '@/components/share/ShareOnXButton';
+import type { ShareKind, ShareQuery } from '@/lib/share';
 
 const XP_PER_LEVEL = 500;
 
@@ -28,6 +30,7 @@ interface StageCompleteOverlayProps {
   onNext: () => void;
   labHints?: LabHint[];
   isGuest?: boolean;
+  share?: { kind: ShareKind; id: string; query: ShareQuery };
 }
 
 export function StageCompleteOverlay({
@@ -39,6 +42,7 @@ export function StageCompleteOverlay({
   onNext,
   labHints,
   isGuest,
+  share,
 }: StageCompleteOverlayProps) {
   const [visible, setVisible] = useState(false);
   const [starsShown, setStarsShown] = useState(0);
@@ -146,6 +150,9 @@ export function StageCompleteOverlay({
             </div>
           </div>
         )}
+
+        {/* X シェア */}
+        {share && xpShown && <ShareOnXButton {...share} />}
 
         {/* Lab hints */}
         {labHints && labHints.length > 0 && xpShown && (

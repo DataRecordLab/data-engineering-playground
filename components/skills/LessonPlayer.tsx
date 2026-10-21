@@ -1,24 +1,54 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import type { SkillLesson, SkillQuestion, MultipleChoiceQuestion, TrueFalseQuestion, OrderingQuestion, FillBlankQuestion } from '@/types';
+import type { SkillLesson, SkillQuestion, MultipleChoiceQuestion, TrueFalseQuestion, OrderingQuestion, FillBlankQuestion, AnswerOutcome, LessonResult } from '@/types';
 import { useGameStore } from '@/lib/store/gameStore';
+import { shuffleQuestion, classifyAnswer, summarize, xpFor } from '@/lib/skills/grading';
+
+type AnswerHandler = (correct: boolean, confident: boolean) => void;
+
+// ── 自信度の申告 ─────────────────────────────────────────────────────
+// 選択肢を選んだあとに「自信あり / 勘」を申告させる。
+// 勘で当たった問題は理解済みと見なさず、レッスンの最後にもう一度出題する
+
+function ConfidenceSubmit({ onSubmit }: { onSubmit: (confident: boolean) => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-2.5 pt-1 animate-slide-up">
+      <button
+        onClick={() => onSubmit(false)}
+        className="py-3 rounded-xl border border-slate-700 bg-slate-900 hover:border-slate-500 text-slate-300 font-bold text-sm transition-colors"
+      >
+        🤔 自信なし（勘）
+      </button>
+      <button
+        onClick={() => onSubmit(true)}
+        className="py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm transition-colors"
+      >
+        💡 理由まで説明できる
+      </button>
+    </div>
+  );
+}
 
 // ── 問題コンポーネント ───────────────────────────────────────────────
 
-function MultipleChoiceCard({ q, onAnswer }: { q: MultipleChoiceQuestion; onAnswer: (correct: boolean) => void }) {
-  const [selected, setSelected] = useState<number | null>(null);
+function MultipleChoiceCard({ q, onAnswer }: { q: MultipleChoiceQuestion; onAnswer: AnswerHandler }) {
+  const [picked, setPicked] = useState<number | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const selected = submitted ? picked : null;
 
-  function handle(i: number) {
-    if (selected !== null) return;
-    setSelected(i);
-    setTimeout(() => onAnswer(q.options[i].correct), 900);
+  function submit(confident: boolean) {
+    if (picked === null || submitted) return;
+    setSubmitted(true);
+    setTimeout(() => onAnswer(q.options[picked].correct, confident), 900);
   }
 
   return (
     <div className="space-y-2.5">
       {q.options.map((opt, i) => {
-        let cls = 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60';
+        let cls = i === picked
+          ? 'border-indigo-500/70 bg-indigo-500/10 text-indigo-200'
+          : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60';
         if (selected !== null) {
           if (opt.correct) cls = 'border-green-500/60 bg-green-500/10 text-green-300';
           else if (i === selected && !opt.correct) cls = 'border-red-500/60 bg-red-500/10 text-red-300';
@@ -27,8 +57,8 @@ function MultipleChoiceCard({ q, onAnswer }: { q: MultipleChoiceQuestion; onAnsw
         return (
           <button
             key={i}
-            onClick={() => handle(i)}
-            disabled={selected !== null}
+            onClick={() => !submitted && setPicked(i)}
+            disabled={submitted}
             className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${cls} disabled:cursor-default`}
           >
             <span className="text-slate-500 mr-2 font-mono text-xs">
@@ -40,43 +70,53 @@ function MultipleChoiceCard({ q, onAnswer }: { q: MultipleChoiceQuestion; onAnsw
           </button>
         );
       })}
+      {picked !== null && !submitted && <ConfidenceSubmit onSubmit={submit} />}
     </div>
   );
 }
 
-function TrueFalseCard({ q, onAnswer }: { q: TrueFalseQuestion; onAnswer: (correct: boolean) => void }) {
-  const [selected, setSelected] = useState<boolean | null>(null);
+function TrueFalseCard({ q, onAnswer }: { q: TrueFalseQuestion; onAnswer: AnswerHandler }) {
+  const [picked, setPicked] = useState<boolean | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const selected = submitted ? picked : null;
 
-  function handle(val: boolean) {
-    if (selected !== null) return;
-    setSelected(val);
-    setTimeout(() => onAnswer(val === q.correct), 900);
+  function submit(confident: boolean) {
+    if (picked === null || submitted) return;
+    setSubmitted(true);
+    setTimeout(() => onAnswer(picked === q.correct, confident), 900);
   }
 
   const btnCls = (val: boolean) => {
-    if (selected === null) return 'border-slate-700 bg-slate-900/60 text-slate-300 hover:border-slate-500';
+    if (selected === null) {
+      return val === picked
+        ? 'border-indigo-500/70 bg-indigo-500/10 text-indigo-200'
+        : 'border-slate-700 bg-slate-900/60 text-slate-300 hover:border-slate-500';
+    }
     if (val === q.correct) return 'border-green-500/60 bg-green-500/10 text-green-300';
     if (val === selected) return 'border-red-500/60 bg-red-500/10 text-red-300';
     return 'border-slate-800 bg-slate-900/30 text-slate-600';
   };
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {([true, false] as const).map(val => (
-        <button
-          key={String(val)}
-          onClick={() => handle(val)}
-          disabled={selected !== null}
-          className={`py-5 rounded-xl border text-2xl font-black transition-all disabled:cursor-default ${btnCls(val)}`}
-        >
-          {val ? '⭕ 正しい' : '✗ 間違い'}
-        </button>
-      ))}
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        {([true, false] as const).map(val => (
+          <button
+            key={String(val)}
+            onClick={() => !submitted && setPicked(val)}
+            disabled={submitted}
+            className={`py-5 rounded-xl border text-2xl font-black transition-all disabled:cursor-default ${btnCls(val)}`}
+          >
+            {val ? '⭕ 正しい' : '✗ 間違い'}
+          </button>
+        ))}
+      </div>
+      {picked !== null && !submitted && <ConfidenceSubmit onSubmit={submit} />}
     </div>
   );
 }
 
-function OrderingCard({ q, onAnswer }: { q: OrderingQuestion; onAnswer: (correct: boolean) => void }) {
+function OrderingCard({ q, onAnswer }: { q: OrderingQuestion; onAnswer: AnswerHandler }) {
   const [order, setOrder] = useState<number[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [correct, setCorrect] = useState(false);
@@ -92,7 +132,7 @@ function OrderingCard({ q, onAnswer }: { q: OrderingQuestion; onAnswer: (correct
         const isCorrect = next.every((v, i) => v === q.correctOrder[i]);
         setCorrect(isCorrect);
         setSubmitted(true);
-        setTimeout(() => onAnswer(isCorrect), 1000);
+        setTimeout(() => onAnswer(isCorrect, true), 1000);
       }
     }
   }
@@ -140,7 +180,7 @@ function OrderingCard({ q, onAnswer }: { q: OrderingQuestion; onAnswer: (correct
   );
 }
 
-function FillBlankCard({ q, onAnswer }: { q: FillBlankQuestion; onAnswer: (correct: boolean) => void }) {
+function FillBlankCard({ q, onAnswer }: { q: FillBlankQuestion; onAnswer: AnswerHandler }) {
   const [value, setValue] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [correct, setCorrect] = useState(false);
@@ -158,7 +198,7 @@ function FillBlankCard({ q, onAnswer }: { q: FillBlankQuestion; onAnswer: (corre
       (q.acceptedAnswers ?? []).some(a => v === normalize(a));
     setCorrect(ok);
     setSubmitted(true);
-    setTimeout(() => onAnswer(ok), 900);
+    setTimeout(() => onAnswer(ok, true), 900);
   }
 
   return (
@@ -204,45 +244,79 @@ function FillBlankCard({ q, onAnswer }: { q: FillBlankQuestion; onAnswer: (corre
 
 type Phase = 'intro' | 'question' | 'feedback';
 
+// review: 初回で理解できていなかった問題の再出題（採点には含めない）
+interface DeckItem {
+  source: SkillQuestion;
+  shown: SkillQuestion;
+  review: boolean;
+}
+
 interface Props {
   lesson: SkillLesson;
-  onComplete: (xpEarned: number, correctCount: number) => void;
+  onComplete: (xpEarned: number, result: LessonResult) => void;
   hintUnlocked?: boolean;
 }
 
+const FEEDBACK_COPY: Record<AnswerOutcome, { title: string; note?: string; tone: 'good' | 'warn' | 'bad' }> = {
+  mastered:      { title: '✓ 正解！', tone: 'good' },
+  lucky:         { title: '✓ 正解（勘）', note: '当たりましたが、勘の正解は「理解済み」に数えません。レッスンの最後にもう一度出題します。', tone: 'warn' },
+  misconception: { title: '✗ 不正解 — 思い込みポイント', note: '自信があったのに外れた問題は、実務で事故につながりやすい誤解です。解説をよく読んでください。最後にもう一度出題します。', tone: 'bad' },
+  unknown:       { title: '✗ 不正解', note: '正直な申告なので HP は減りません。解説を読んだら、最後にもう一度挑戦しましょう。', tone: 'bad' },
+};
+
 export function LessonPlayer({ lesson, onComplete, hintUnlocked = false }: Props) {
+  const [deck, setDeck] = useState<DeckItem[]>([]);
   const [qIdx, setQIdx] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [phase, setPhase] = useState<Phase>(lesson.concept ? 'intro' : 'question');
-  const [lastCorrect, setLastCorrect] = useState(false);
+  const [outcomes, setOutcomes] = useState<AnswerOutcome[]>([]);
+  const [phase, setPhase] = useState<Phase>('intro');
+  const [lastOutcome, setLastOutcome] = useState<AnswerOutcome>('mastered');
   const [showHint, setShowHint] = useState(false);
 
   const { loseHp, triggerJump } = useGameStore();
 
-  const q = lesson.questions[qIdx];
+  const item = deck[qIdx];
+  const q = item?.shown;
   const total = lesson.questions.length;
-  const progress = qIdx / total;
+  const progress = deck.length > 0 ? qIdx / deck.length : 0;
+  const lastCorrect = lastOutcome === 'mastered' || lastOutcome === 'lucky';
 
-  const handleAnswer = useCallback((correct: boolean) => {
-    setLastCorrect(correct);
+  // 選択肢のシャッフルはクライアントのイベント内で行う（SSR とのズレを避ける）
+  function start() {
+    setDeck(lesson.questions.map(src => ({ source: src, shown: shuffleQuestion(src), review: false })));
+    setQIdx(0);
+    setOutcomes([]);
+    setPhase('question');
+  }
+
+  const handleAnswer = useCallback((correct: boolean, confident: boolean) => {
+    const outcome = classifyAnswer(correct, confident);
+    setLastOutcome(outcome);
     setPhase('feedback');
-    if (correct) {
-      triggerJump();
-      setCorrectCount(c => c + 1);
-    } else {
-      loseHp();
+    if (correct) triggerJump();
+    // 自信なしと正直に申告した不正解では HP を減らさない
+    if (outcome === 'misconception') loseHp();
+
+    // 復習の回答は採点に含めず、再出題もしない（無限ループ防止）
+    if (!item.review) {
+      setOutcomes(o => [...o, outcome]);
+      if (outcome !== 'mastered') {
+        setDeck(d => [...d, { source: item.source, shown: shuffleQuestion(item.source), review: true }]);
+      }
     }
-  }, [loseHp, triggerJump]);
+  }, [item, loseHp, triggerJump]);
 
   function next() {
-    if (qIdx + 1 >= total) {
-      const earned = Math.round(lesson.xpReward * ((correctCount + (lastCorrect ? 1 : 0)) / total));
-      onComplete(Math.max(earned, Math.round(lesson.xpReward * 0.3)), correctCount + (lastCorrect ? 1 : 0));
+    if (qIdx + 1 >= deck.length) {
+      const result = summarize(outcomes);
+      onComplete(xpFor(result, lesson.xpReward), result);
     } else {
       setQIdx(i => i + 1);
+      setShowHint(false);
       setPhase('question');
     }
   }
+
+  const copy = FEEDBACK_COPY[lastOutcome];
 
   return (
     <div className="flex flex-col h-full">
@@ -258,25 +332,35 @@ export function LessonPlayer({ lesson, onComplete, hintUnlocked = false }: Props
         <div className="max-w-xl mx-auto px-5 py-8">
 
           {/* ── コンセプトカード（Progate風） ── */}
-          {phase === 'intro' && lesson.concept && (
+          {phase === 'intro' && (
             <div className="flex flex-col gap-6 animate-slide-up">
               <div className="text-center">
                 <span className="text-5xl">{lesson.icon}</span>
                 <p className="text-slate-500 text-xs font-mono uppercase tracking-widest mt-3 mb-1">このレッスンで学ぶこと</p>
-                <h2 className="text-white font-black text-xl">{lesson.concept.title}</h2>
+                <h2 className="text-white font-black text-xl">{lesson.concept?.title ?? lesson.title}</h2>
               </div>
 
-              <div
-                className="rounded-2xl border px-6 py-5 space-y-3"
-                style={{ background: 'rgba(15,23,42,0.8)', borderColor: 'rgba(99,102,241,0.25)' }}
-              >
-                <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-line">
-                  {lesson.concept.body}
+              {lesson.concept && (
+                <div
+                  className="rounded-2xl border px-6 py-5 space-y-3"
+                  style={{ background: 'rgba(15,23,42,0.8)', borderColor: 'rgba(99,102,241,0.25)' }}
+                >
+                  <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-line">
+                    {lesson.concept.body}
+                  </p>
+                </div>
+              )}
+
+              <div className="rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3 text-left">
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  回答するときは<span className="text-indigo-300 font-bold">「理由まで説明できる」</span>か
+                  <span className="text-slate-200 font-bold">「自信なし（勘）」</span>かを選びます。
+                  勘で当たった問題は理解済みに数えず、最後にもう一度出題されます。★3 は全問を自信を持って正解したときだけです。
                 </p>
               </div>
 
               <button
-                onClick={() => setPhase('question')}
+                onClick={start}
                 className="w-full py-4 rounded-2xl font-black text-white text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
                 style={{ background: '#4F46E5', boxShadow: '0 5px 0 #3730A3' }}
               >
@@ -286,11 +370,13 @@ export function LessonPlayer({ lesson, onComplete, hintUnlocked = false }: Props
           )}
 
           {/* ── 問題 ── */}
-          {(phase === 'question' || phase === 'feedback') && (
+          {(phase === 'question' || phase === 'feedback') && q && (
             <div className="space-y-6">
               {/* 問題番号 */}
               <div className="flex items-center justify-between">
-                <span className="text-slate-600 text-xs font-mono">{qIdx + 1} / {total}</span>
+                <span className="text-slate-600 text-xs font-mono">
+                  {item.review ? `🔁 復習 ${qIdx + 1 - total} / ${deck.length - total}` : `${qIdx + 1} / ${total}`}
+                </span>
                 <span className="text-slate-600 text-xs">{QUESTION_TYPE_LABEL[q.type]}</span>
               </div>
 
@@ -321,9 +407,9 @@ export function LessonPlayer({ lesson, onComplete, hintUnlocked = false }: Props
               {/* 選択肢 */}
               {phase === 'question' && (
                 <>
-                  {q.type === 'multiple_choice' && <MultipleChoiceCard q={q as MultipleChoiceQuestion} onAnswer={handleAnswer} />}
-                  {q.type === 'true_false' && <TrueFalseCard q={q as TrueFalseQuestion} onAnswer={handleAnswer} />}
-                  {q.type === 'ordering' && <OrderingCard q={q as OrderingQuestion} onAnswer={handleAnswer} />}
+                  {q.type === 'multiple_choice' && <MultipleChoiceCard key={qIdx} q={q as MultipleChoiceQuestion} onAnswer={handleAnswer} />}
+                  {q.type === 'true_false' && <TrueFalseCard key={qIdx} q={q as TrueFalseQuestion} onAnswer={handleAnswer} />}
+                  {q.type === 'ordering' && <OrderingCard key={qIdx} q={q as OrderingQuestion} onAnswer={handleAnswer} />}
                   {q.type === 'fill_blank' && <FillBlankCard key={qIdx} q={q as FillBlankQuestion} onAnswer={handleAnswer} />}
                 </>
               )}
@@ -333,14 +419,21 @@ export function LessonPlayer({ lesson, onComplete, hintUnlocked = false }: Props
                 <div className="space-y-4 animate-slide-up">
                   <div
                     className={`rounded-2xl border px-5 py-4 ${
-                      lastCorrect
+                      copy.tone === 'good'
                         ? 'bg-green-500/10 border-green-500/30'
+                        : copy.tone === 'warn'
+                        ? 'bg-amber-500/10 border-amber-500/30'
                         : 'bg-red-500/10 border-red-500/30'
                     }`}
                   >
-                    <p className={`font-black text-sm mb-2 ${lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
-                      {lastCorrect ? '✓ 正解！' : '✗ 不正解'}
+                    <p className={`font-black text-sm mb-2 ${
+                      copy.tone === 'good' ? 'text-green-400' : copy.tone === 'warn' ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                      {item.review ? (lastCorrect ? '✓ 正解！' : '✗ 不正解') : copy.title}
                     </p>
+                    {!item.review && copy.note && (
+                      <p className="text-slate-400 text-xs leading-relaxed mb-2">{copy.note}</p>
+                    )}
                     <p className="text-slate-300 text-sm leading-relaxed">{q.explanation}</p>
                   </div>
 
@@ -352,7 +445,7 @@ export function LessonPlayer({ lesson, onComplete, hintUnlocked = false }: Props
                       : { background: '#4F46E5', boxShadow: '0 4px 0 #3730A3' }
                     }
                   >
-                    {qIdx + 1 >= total ? '結果を見る →' : '次の問題 →'}
+                    {qIdx + 1 >= deck.length ? '結果を見る →' : '次の問題 →'}
                   </button>
                 </div>
               )}

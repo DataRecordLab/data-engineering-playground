@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { FloatingLion } from "@/components/characters/FloatingLion";
 import { MobileBottomNav } from "@/components/dashboard/MobileBottomNav";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +16,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Modelion — Data Engineering Playground",
-  description: "データパイプラインを設計して体験する学習プラットフォーム",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Modelion — データエンジニアリングを、設計して体験する",
+    template: "%s | Modelion",
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "ja_JP",
+    title: "Modelion — データエンジニアリングを、設計して体験する",
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Modelion — データエンジニアリングを、設計して体験する",
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="ja"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
